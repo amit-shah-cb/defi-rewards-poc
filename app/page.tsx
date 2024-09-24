@@ -2,81 +2,110 @@
 
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
+import '@rainbow-me/rainbowkit/styles.css';
 
-const Logo = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Logo), { ssr: false })
+import {
+  getDefaultConfig,
+  RainbowKitProvider,
+} from '@rainbow-me/rainbowkit';
+import { WagmiProvider } from 'wagmi';
+import {
+  base,
+} from 'wagmi/chains';
+import {
+  QueryClientProvider,
+  QueryClient,
+} from "@tanstack/react-query";
+import { http } from 'wagmi';
+import * as THREE from 'three'
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { extend, Object3DNode} from '@react-three/fiber'
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
+
+import { Canvas } from '@react-three/fiber'
+import { Preload } from '@react-three/drei'
+import { r3f } from '@/helpers/global'
+import { Bloom, DepthOfField, EffectComposer, Noise, Vignette, ChromaticAberration } from '@react-three/postprocessing'
+  import { BlendFunction } from 'postprocessing'
+import { OrbitControls, OrthographicCamera, PerspectiveCamera, View as ViewImpl, Effects } from '@react-three/drei'
+
+extend({ TextGeometry })
+import * as myFont from '@/fonts/font.json'
+declare module "@react-three/fiber" {
+  interface ThreeElements {
+    textGeometry: Object3DNode<TextGeometry, typeof TextGeometry>;
+  }
+}
+
+const config = getDefaultConfig({
+  appName: 'My RainbowKit App',
+  projectId: 'YOUR_PROJECT_ID',
+  chains: [base],
+  ssr: false, // If your dApp uses server side rendering (SSR),
+  transports: {
+    [base.id]: http('https://mainnet.base.org'),
+  },
+});
+
+
+const font = new FontLoader().parse(myFont);
+const queryClient = new QueryClient();
+
 const Dog = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Dog), { ssr: false })
-const Duck = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Duck), { ssr: false })
-const View = dynamic(() => import('@/components/canvas/View').then((mod) => mod.View), {
-  ssr: false,
-  loading: () => (
-    <div className='flex h-96 w-full flex-col items-center justify-center'>
-      <svg className='-ml-1 mr-3 h-5 w-5 animate-spin text-black' fill='none' viewBox='0 0 24 24'>
-        <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4' />
-        <path
-          className='opacity-75'
-          fill='currentColor'
-          d='M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-        />
-      </svg>
-    </div>
-  ),
-})
-const Common = dynamic(() => import('@/components/canvas/View').then((mod) => mod.Common), { ssr: false })
 
 export default function Page() {
   return (
     <>
-      <div className='mx-auto flex w-full flex-col flex-wrap items-center md:flex-row  lg:w-4/5'>
-        {/* jumbo */}
-        <div className='flex w-full flex-col items-start justify-center p-12 text-center md:w-2/5 md:text-left'>
-          <p className='w-full uppercase'>Next + React Three Fiber</p>
-          <h1 className='my-4 text-5xl font-bold leading-tight'>Next 3D Starter</h1>
-          <p className='mb-8 text-2xl leading-normal'>A minimalist starter for React, React-three-fiber and Threejs.</p>
-        </div>
-
-        <div className='w-full text-center md:w-3/5'>
-          <View className='flex h-96 w-full flex-col items-center justify-center'>
-            <Suspense fallback={null}>
-              <Logo route='/blob' scale={0.6} position={[0, 0, 0]} />
-              <Common />
-            </Suspense>
-          </View>
-        </div>
-      </div>
-
-      <div className='mx-auto flex w-full flex-col flex-wrap items-center p-12 md:flex-row  lg:w-4/5'>
-        {/* first row */}
-        <div className='relative h-48 w-full py-6 sm:w-1/2 md:my-12 md:mb-40'>
-          <h2 className='mb-3 text-3xl font-bold leading-none text-gray-800'>Events are propagated</h2>
-          <p className='mb-8 text-gray-600'>Drag, scroll, pinch, and rotate the canvas to explore the 3D scene.</p>
-        </div>
-        <div className='relative my-12 h-48 w-full py-6 sm:w-1/2 md:mb-40'>
-          <View orbit className='relative h-full  sm:h-48 sm:w-full'>
-            <Suspense fallback={null}>
-              <Dog scale={2} position={[0, -1.6, 0]} rotation={[0.0, -0.3, 0]} />
-              <Common color={'lightpink'} />
-            </Suspense>
-          </View>
-        </div>
-        {/* second row */}
-        <div className='relative my-12 h-48 w-full py-6 sm:w-1/2 md:mb-40'>
-          <View orbit className='relative h-full animate-bounce sm:h-48 sm:w-full'>
-            <Suspense fallback={null}>
-              <Duck route='/blob' scale={2} position={[0, -1.6, 0]} />
-              <Common color={'lightblue'} />
-            </Suspense>
-          </View>
-        </div>
-        <div className='w-full p-6 sm:w-1/2'>
-          <h2 className='mb-3 text-3xl font-bold leading-none text-gray-800'>Dom and 3D are synchronized</h2>
-          <p className='mb-8 text-gray-600'>
-            3D Divs are renderer through the View component. It uses gl.scissor to cut the viewport into segments. You
-            tie a view to a tracking div which then controls the position and bounds of the viewport. This allows you to
-            have multiple views with a single, performant canvas. These views will follow their tracking elements,
-            scroll along, resize, etc.
-          </p>
-        </div>
-      </div>
+     <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <ConnectButton />
+          
+          <div className='mx-auto flex w-full flex-col flex-wrap items-center p-12 md:flex-row'>
+            
+          </div>
+           <div className='mx-auto flex w-full flex-col flex-wrap items-center p-12 md:flex-row'>
+            {/* first row */}            
+            <div className='relative h-96 w-full py-6 md:mb-40'>
+               <Canvas>
+                <color attach='background' args={["blue"]} />
+                 <OrbitControls />
+                <OrthographicCamera
+                  makeDefault
+                  zoom={8}
+                  top={10}
+                  bottom={-10}
+                  left={-20}
+                  right={20}
+                  near={1}
+                  far={20}
+                  position={[0, 0, 5]}
+                />
+                <ambientLight intensity={0.1} />
+                <directionalLight position={[0, 0, 5]} color="red" />
+                 <mesh position={[-2.25,-.5,0]}>              
+                      <textGeometry args={['drip', {font, size:1.5, height: .0, depth:0., bevelEnabled:false }]}/>
+                      <meshStandardMaterial attach='material' opacity={0.5} color={new THREE.Color("red")} emissive={new THREE.Color("orange")} emissiveIntensity={1.9}/>
+                  </mesh>
+                  <EffectComposer>
+                    <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.6} height={200} />
+                      <ChromaticAberration
+                        blendFunction={BlendFunction.NORMAL} // blend mode
+                        offset={new THREE.Vector2(0.005, 0.005)} // color offset
+                        radialModulation={true}
+                        modulationOffset={0.} // shift effect
+                        opacity={0.8}
+                      />
+                  </EffectComposer>
+              </Canvas>
+            </div>
+            
+          
+          </div>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
     </>
   )
 }

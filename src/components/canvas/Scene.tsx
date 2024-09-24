@@ -13,7 +13,7 @@ export default function Scene({ ...props }) {
     >
       {/* @ts-ignore */}
       <r3f.Out />
-      <Preload all />
+      <Preload all />       
     </Canvas>
   )
 }
