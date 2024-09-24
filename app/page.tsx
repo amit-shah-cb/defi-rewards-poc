@@ -60,22 +60,18 @@ export default function Page() {
      <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <ConnectButton />
-          
-          <div className='mx-auto flex w-full flex-col flex-wrap items-center p-12 md:flex-row'>
-            
-          </div>
+          <ConnectButton />         
            <div className='mx-auto flex w-full flex-col flex-wrap items-center p-12 md:flex-row'>
             {/* first row */}            
-            <div className='relative h-96 w-full py-6 md:mb-40'>
+            <div className='relative h-dvh w-full py-6 md:mb-40'>
                <Canvas>
                 <color attach='background' args={["blue"]} />
                  <OrbitControls />
                 <OrthographicCamera
                   makeDefault
                   zoom={8}
-                  top={10}
-                  bottom={-10}
+                  top={40}
+                  bottom={-40}
                   left={-20}
                   right={20}
                   near={1}
@@ -84,12 +80,12 @@ export default function Page() {
                 />
                 <ambientLight intensity={0.1} />
                 <directionalLight position={[0, 0, 5]} color="red" />
-                 <mesh position={[-2.25,-.5,0]}>              
+                 <mesh position={[-2.25,2.5,0]}>              
                       <textGeometry args={['drip', {font, size:1.5, height: .0, depth:0., bevelEnabled:false }]}/>
-                      <meshStandardMaterial attach='material' opacity={0.5} color={new THREE.Color("red")} emissive={new THREE.Color("orange")} emissiveIntensity={1.9}/>
+                      <meshStandardMaterial attach='material' opacity={0.5} color={new THREE.Color("yellow")} emissive={new THREE.Color("green")} emissiveIntensity={4.4}/>
                   </mesh>
                   <EffectComposer>
-                    <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.6} height={200} />
+                    <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.6} height={800} />
                       <ChromaticAberration
                         blendFunction={BlendFunction.NORMAL} // blend mode
                         offset={new THREE.Vector2(0.005, 0.005)} // color offset
