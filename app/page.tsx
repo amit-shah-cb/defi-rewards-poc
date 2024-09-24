@@ -52,7 +52,7 @@ const config = getDefaultConfig({
 const font = new FontLoader().parse(myFont);
 const queryClient = new QueryClient();
 
-const Dog = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Dog), { ssr: false })
+// const Dog = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Dog), { ssr: false })
 
 export default function Page() {
   return (
