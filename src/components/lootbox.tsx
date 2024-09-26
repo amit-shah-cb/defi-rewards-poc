@@ -87,7 +87,7 @@ export default function Lootbox() {
             setClaimCooldown(Number(data as bigint));
         });
     }
-  },[])  
+  },[]) 
 
   useEffect(() => {
         if(address!=null){
@@ -104,7 +104,7 @@ export default function Lootbox() {
     },[address,claimable])
 
   useEffect(() => {
-    if(address !=null && claimedTime == null && claimCooldown != null){
+    if(address !=null && claimCooldown != null){
         readContract(config, {
             abi: PointsUpgradableAbi, 
             address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
@@ -113,17 +113,27 @@ export default function Lootbox() {
         }).then((data) => {
             console.log("WE GOT DATA:",data);     
             const lastClaimedTime = Number(data as bigint);  
-            const currentTimeSecs = (new Date()).getTime()/1000;          
+            setClaimedTime(lastClaimedTime);
+            const currentTimeSecs = (new Date()).getTime()/1000;                     
             if(lastClaimedTime === 0 || (currentTimeSecs - lastClaimedTime > claimCooldown)){
                 console.log("CLAIMABLE");
                 setClaimable(true);
             }else{
-                console.log("NOT CLAIMABLE");
+                console.log("NOT CLAIMABLE:",( (lastClaimedTime + claimCooldown)- currentTimeSecs)*1000);
+                let context = setTimeout(()=>{
+                    console.log("CALLING SET CLAIMABLE");
+                    setClaimable(true);
+                },((lastClaimedTime + claimCooldown)- currentTimeSecs)*1000);
+                
+                return ()=>{
+                  console.log("CLEARING TIMEOUT");
+                  clearTimeout(context)
+                };
             }
-            setClaimedTime(lastClaimedTime);
+            
         });
     }
-  }, [address,claimedTime,claimCooldown,claimable])
+  }, [address,claimCooldown,claimable])
 
   const getButtonMessage = ()=>{       
         if(!claimable && claimedTime != null && claimCooldown != null){        
