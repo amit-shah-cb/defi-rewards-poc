@@ -1,8 +1,8 @@
 "use client";
 
-import { useAccount, useBalance, useEnsName } from "wagmi";
-import { bytesToBigInt, formatUnits } from "viem";
-import { use, useEffect, useRef, useState } from "react";
+import { useAccount, useBalance, useEnsName, useWatchContractEvent } from "wagmi";
+import { bytesToBigInt, formatBlock, formatUnits } from "viem";
+import {  useEffect, useRef, useState } from "react";
 
 import * as THREE from 'three'
 
@@ -11,19 +11,17 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 
 import { Canvas } from '@react-three/fiber'
-import { Bloom, DepthOfField, EffectComposer, Noise, Vignette, ChromaticAberration } from '@react-three/postprocessing'
+import { Bloom, EffectComposer, ChromaticAberration } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { OrbitControls, OrthographicCamera, PerspectiveCamera, View as ViewImpl, Effects } from '@react-three/drei'
+import { OrbitControls, OrthographicCamera,  View as ViewImpl } from '@react-three/drei'
 
 
 extend({ TextGeometry })
 
 import * as myFont from '@/fonts/font.json'
 import { config } from "@/components/provider";
-import { readContract,writeContract,simulateContract,getBalance, getAccount } from '@wagmi/core';
+import { readContract,writeContract,simulateContract,getBalance, getAccount, waitForTransactionReceipt, watchContractEvent} from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
-import { bytesToHex } from 'viem'
-import { signTransaction } from "viem/accounts";
 
 
 declare module "@react-three/fiber" {
@@ -73,10 +71,11 @@ const Box = () => {
 export default function Lootbox() {
 
   const { address } = useAccount();
-  const [claimedTime, setClaimedTime ] = useState(null);
+  const [claimedTime, setClaimedTime ] = useState(null);  
   const [claimable, setClaimable] = useState(false);
   const [claimCooldown, setClaimCooldown] = useState(null);
-
+  const [logBlockNumber, setLogBlockNumber] = useState(null);
+  
   useEffect(() => {
     if(claimCooldown == null){
         readContract(config, {
@@ -110,7 +109,11 @@ export default function Lootbox() {
             setClaimedTime(lastClaimedTime);
         });
     }
-  }, [address,claimedTime,claimCooldown])
+  }, [address,claimedTime,claimCooldown,claimable])
+
+   useInterval(()=>{
+                
+            },logBlockNumber != null ? 1000 : null);
 
   const getButtonMessage = ()=>{       
         if(!claimable && claimedTime != null && claimCooldown != null){        
@@ -159,6 +162,18 @@ export default function Lootbox() {
             alert("Transaction failed");
             return
         }
+
+        // let unwatch;
+        // unwatch = watchContractEvent(config.getClient(), {
+        //     address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        //     abi:PointsUpgradableAbi,
+        //     eventName: 'LootBoxOpened',            
+        //     onLogs(logs) {                
+        //         console.log("Lootbox opened with rarity:"+logs[0].args.lootBoxRarity);
+        //         unwatch();
+        //     },
+        // })
+        // console.log("setup log watching");
         const tx = await writeContract(config, {
                 abi: PointsUpgradableAbi, 
                 address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
@@ -167,14 +182,39 @@ export default function Lootbox() {
                 value:claimFee,
                 connector
             } as any);
-        //get seq from logs
-        //set interval to check when seq == 0l
+        console.log("tx hash:",tx);
 
+        waitForTransactionReceipt(config, {
+            hash:tx
+        }).then(async (receipt)=>{
+            console.log("receipt",receipt);    
+             let unwatch = watchContractEvent(config, {
+                address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+                abi:PointsUpgradableAbi,
+                eventName: 'LootBoxOpened',
+                args: {
+                    claimer:address
+                },
+                fromBlock:receipt.blockNumber,
+                poll:true,
+                onError:(e)=>{
+                    console.error(e);
+                },
+                onLogs(logs) {                
+                    console.log(logs);
+                    unwatch();
+                    console.log("unwatched");
+                    setClaimable(false);
+                }
+            });
+        });       
         
+       
   }
 
   return (
    <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
+    
             {/* first row */}        
     <div className="h-vdh w-full">     
         <Canvas>
