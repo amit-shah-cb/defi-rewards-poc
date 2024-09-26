@@ -230,7 +230,7 @@ export default function Lootbox() {
         <div className={`m-0 max-w-[30ch] text-xl opacity-50`}>
           {points ? (
             <p>              
-              {Number(formatUnits(points,6)).toFixed(4)}{" "}
+              {Number(formatUnits(points,6)).toFixed(6)}{" "}
               PTS
             </p>
           ) : (
