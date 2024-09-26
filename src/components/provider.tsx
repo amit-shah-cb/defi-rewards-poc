@@ -5,8 +5,8 @@ import { RainbowKitProvider, darkTheme, getDefaultConfig } from "@rainbow-me/rai
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { base } from "viem/chains";
 
-const config = getDefaultConfig({
-  appName: 'My RainbowKit App',
+export const config = getDefaultConfig({
+  appName: 'Defi-Rewards-Poc',
   projectId: 'YOUR_PROJECT_ID',
   chains: [base],
   ssr: false, // If your dApp uses server side rendering (SSR),
@@ -14,6 +14,8 @@ const config = getDefaultConfig({
     [base.id]: http('https://mainnet.base.org'),
   },
 });
+
+
 const queryClient = new QueryClient();
 
 type Props = {

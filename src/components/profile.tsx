@@ -3,6 +3,9 @@
 import { useAccount, useBalance, useEnsName } from "wagmi";
 import { formatUnits } from "viem";
 import { useEffect, useState } from "react";
+import { PointsUpgradableAbi } from '@/abis/PointsUpgradable';
+import { readContract } from '@wagmi/core';
+import {config } from '@/components/provider';
 
 export default function Profile() {
 
@@ -19,10 +22,14 @@ export default function Profile() {
 
   useEffect(() => {
     if(address !=null && points == null){
-        fetch('api/points/balance/')
-        .then(response => response.json())
-        .then(data => {
-            setPoints(data.balance)
+        readContract(config, {
+            abi: PointsUpgradableAbi, 
+            address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
+            functionName:"balanceOf", 
+            args:[address] 
+        }).then((data) => {
+            console.log("user points:",data);
+            setPoints(data);
         });
     }
   }, [points, address])
@@ -47,12 +54,12 @@ export default function Profile() {
         <h2 className={`mb-3 text-2xl font-semibold`}>Points Balance</h2>
         <div className={`m-0 max-w-[30ch] text-xl opacity-50`}>
           {points ? (
-            <p>
+            <p>              
               {Number(formatUnits(points,6)).toFixed(4)}{" "}
               PTS
             </p>
           ) : (
-            <div />
+            <p>0 PTS</p>
           )}
         </div>
       </div>

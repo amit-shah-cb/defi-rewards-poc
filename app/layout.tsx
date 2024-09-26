@@ -1,6 +1,6 @@
 import { Layout } from '@/components/dom/Layout'
 import '@/global.css'
-import Providers from "./provider";
+import Providers from "@/components/provider";
 import { headers } from "next/headers";
 
 export const metadata = {
