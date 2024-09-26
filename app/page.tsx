@@ -77,10 +77,7 @@ export default function Page() {
                       />
                   </EffectComposer>
               </Canvas>
-            </div>
-            {
-              isConnected && <Profile />
-            }
+            </div>           
             {
               isConnected && <Lootbox />
             }

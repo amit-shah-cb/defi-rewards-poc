@@ -74,8 +74,8 @@ export default function Lootbox() {
   const [claimedTime, setClaimedTime ] = useState(null);  
   const [claimable, setClaimable] = useState(false);
   const [claimCooldown, setClaimCooldown] = useState(null);
-  const [logBlockNumber, setLogBlockNumber] = useState(null);
-  
+  const [points, setPoints ] = useState(null);
+
   useEffect(() => {
     if(claimCooldown == null){
         readContract(config, {
@@ -88,6 +88,20 @@ export default function Lootbox() {
         });
     }
   },[])  
+
+  useEffect(() => {
+        if(address!=null){
+            readContract(config, {
+                abi: PointsUpgradableAbi, 
+                address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
+                functionName:"balanceOf", 
+                args:[address] 
+            }).then((data) => {
+                console.log("user points:",data);
+                setPoints(data);
+            });
+        }
+    },[address,claimable])
 
   useEffect(() => {
     if(address !=null && claimedTime == null && claimCooldown != null){
@@ -110,10 +124,6 @@ export default function Lootbox() {
         });
     }
   }, [address,claimedTime,claimCooldown,claimable])
-
-   useInterval(()=>{
-                
-            },logBlockNumber != null ? 1000 : null);
 
   const getButtonMessage = ()=>{       
         if(!claimable && claimedTime != null && claimCooldown != null){        
@@ -214,8 +224,20 @@ export default function Lootbox() {
 
   return (
    <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-    
-            {/* first row */}        
+     
+     <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
+        <h2 className={`mb-3 text-2xl font-semibold`}>Points Balance</h2>
+        <div className={`m-0 max-w-[30ch] text-xl opacity-50`}>
+          {points ? (
+            <p>              
+              {Number(formatUnits(points,6)).toFixed(4)}{" "}
+              PTS
+            </p>
+          ) : (
+            <p>0 PTS</p>
+          )}
+        </div>
+      </div>   
     <div className="h-vdh w-full">     
         <Canvas>
         <color attach='background' args={["white"]} />
