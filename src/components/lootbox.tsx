@@ -14,7 +14,7 @@ import { Canvas } from '@react-three/fiber'
 import { Bloom, EffectComposer, ChromaticAberration } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { OrbitControls, OrthographicCamera,  View as ViewImpl } from '@react-three/drei'
-
+import { Circle } from '@/components/spinner';
 
 extend({ TextGeometry })
 
@@ -22,6 +22,7 @@ import * as myFont from '@/fonts/font.json'
 import { config } from "@/components/provider";
 import { readContract,writeContract,simulateContract,getBalance, getAccount, waitForTransactionReceipt, watchContractEvent} from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
+import { RotatingCircle } from "./rotating";
 
 
 declare module "@react-three/fiber" {
@@ -135,6 +136,18 @@ export default function Lootbox() {
     }
   }, [address,claimCooldown,claimable])
 
+  useEffect(() => {
+    (window as any).handleStart = () => {
+      const event = new Event('startRotation');
+      window.dispatchEvent(event);
+    };
+
+    (window as any).handleStop = () => {
+      const event = new Event('stopRotation');
+      window.dispatchEvent(event);
+    };
+  }, []);
+ 
   const getButtonMessage = ()=>{       
         if(!claimable && claimedTime != null && claimCooldown != null){        
             return `🔒 ${new Date((claimedTime + claimCooldown)*1000).toLocaleString()} 🔒`;
@@ -248,7 +261,7 @@ export default function Lootbox() {
           )}
         </div>
       </div>   
-    <div className="h-vdh w-full">     
+    <div className="size-full">     
         <Canvas>
         <color attach='background' args={["white"]} />
             <OrbitControls />
@@ -264,7 +277,9 @@ export default function Lootbox() {
             position={[0, 0, 5]}
         />
         <directionalLight position={[0, 0, 5]} color="white" />
-        <Box />
+        {/* <Circle /> */}
+        <RotatingCircle />
+        {/* <Box /> */}
             <EffectComposer>
             <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.6} height={800} />
                 <ChromaticAberration
@@ -276,6 +291,14 @@ export default function Lootbox() {
                 />
             </EffectComposer>
         </Canvas>
+    </div>
+    <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
+      <button onClick={() => (window as any).handleStart()} className="mr-2 rounded bg-blue-500 px-4 py-2 text-white">
+      Start Rotation
+      </button>
+      <button onClick={() => (window as any).handleStop()} className="rounded bg-red-500 px-4 py-2 text-white">
+      Stop Rotation
+      </button>
     </div>
      <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">     
         <button className="btn"  disabled={!claimable} onClick={()=>{ submitLootboxClaim()}}>
