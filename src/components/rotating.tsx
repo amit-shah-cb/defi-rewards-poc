@@ -10,7 +10,7 @@ export const RotatingCircle = () => {
   const meshRef = useRef();
   const [isRotating, setIsRotating] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
-  const rotationSpeed = Math.PI * .15;
+  const rotationSpeed = Math.PI * .25;
 
   const [springProps, setSpringProps] = useSpring(() => ({
     rotation: 0,
