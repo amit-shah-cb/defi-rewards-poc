@@ -38,7 +38,7 @@ export const RotatingCircle = () => {
         from: { rotation: currentRotation },
         to: { rotation: targetRotation },      
         config: {
-          duration: ((targetRotation-currentRotation)/rotationSpeed * 350),
+          duration: ((targetRotation-currentRotation)/rotationSpeed * 400),
           easing: easings.easeOutElastic,
         },
         onRest: () => {
@@ -105,11 +105,28 @@ export const RotatingCircle = () => {
         ref={meshRef} 
         rotation-z={springProps.rotation}
       >
-        <circleGeometry args={[1, 32]} />
-        <meshStandardMaterial map={debugMap} side={THREE.DoubleSide} />
+        <group>
+        <mesh position={[0,0,0]} rotation-z={Math.PI}>
+            <circleGeometry args={[1, 32, 0, Math.PI *.5]} />
+            <meshStandardMaterial color="orange" emissive={new THREE.Color("orange")} emissiveIntensity={1.8}/>
+        </mesh>
+        <mesh position={[0,0,0]} rotation-z={Math.PI*2}>
+            <circleGeometry args={[1, 32, 0, Math.PI *.5]} />
+            <meshStandardMaterial color="orange" emissive={new THREE.Color("green")} emissiveIntensity={3.8}/>
+        </mesh>
+        <mesh position={[0,0,0]} rotation-z={Math.PI*1.5}>
+            <circleGeometry args={[1, 32, 0, Math.PI *.5]} />
+            <meshStandardMaterial color="blue" emissive={new THREE.Color("blue")} emissiveIntensity={.8}/>
+        </mesh>
+        <mesh position={[0,0,0]} rotation-z={Math.PI*.5}>
+            <circleGeometry args={[1, 32, 0, Math.PI *.5]} />
+            <meshStandardMaterial color="red" emissive={new THREE.Color("red")} emissiveIntensity={2.8}/>
+        </mesh>
+        </group>
       </animated.mesh>
+      
       <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
+      {/* <pointLight position={[10, 10, 10]} /> */}
     </>
   );
 };

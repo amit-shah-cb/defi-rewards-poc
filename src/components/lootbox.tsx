@@ -261,34 +261,35 @@ export default function Lootbox() {
           )}
         </div>
       </div>   
-    <div className="size-full">     
-        <Canvas>
+    <div className="h-96 w-full" >     
+        <Canvas flat linear>
         <color attach='background' args={["white"]} />
             <OrbitControls />
         <OrthographicCamera
             makeDefault
-            zoom={4}
-            top={10}
-            bottom={-10}
-            left={-20}
-            right={20}
-            near={1}
+             zoom={100}
+            // top={20}
+            // bottom={-20}
+            // left={-40}
+            // right={40}
+            near={0}
             far={20}
-            position={[0, 0, 5]}
+            position={[0, 0, 1]}
         />
         <directionalLight position={[0, 0, 5]} color="white" />
         {/* <Circle /> */}
         <RotatingCircle />
         {/* <Box /> */}
             <EffectComposer>
-            <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.6} height={800} />
-                <ChromaticAberration
+             <ChromaticAberration
                 blendFunction={BlendFunction.NORMAL} // blend mode
-                offset={new THREE.Vector2(0.01, 0.01)} // color offset
+                offset={new THREE.Vector2(0.01, 0.02)} // color offset
                 radialModulation={true}
                 modulationOffset={0.} // shift effect
-                opacity={0.8}
+                opacity={0.5}
                 />
+            <Bloom luminanceThreshold={0.1} luminanceSmoothing={0.6} height={100} />
+               
             </EffectComposer>
         </Canvas>
     </div>
