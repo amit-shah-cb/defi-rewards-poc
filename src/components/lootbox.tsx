@@ -11,7 +11,7 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 
 import { Canvas } from '@react-three/fiber'
-import { Bloom, EffectComposer, ChromaticAberration } from '@react-three/postprocessing'
+import { Bloom, EffectComposer, ChromaticAberration, Outline } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { OrbitControls, OrthographicCamera,  View as ViewImpl } from '@react-three/drei'
 import { Circle } from '@/components/spinner';
@@ -23,6 +23,7 @@ import { config } from "@/components/provider";
 import { readContract,writeContract,simulateContract,getBalance, getAccount, waitForTransactionReceipt, watchContractEvent} from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
 import { RotatingCircle } from "./rotating";
+import { MotionBlur } from "./motionblur";
 
 
 declare module "@react-three/fiber" {
@@ -232,12 +233,15 @@ export default function Lootbox() {
                 poll:true,
                 onError:(e)=>{
                     console.error(e);
+                    unwatch();
+                     (window as any).handleStop();
                 },
                 onLogs(logs) {                
                     console.log(logs);
                     unwatch();
                     console.log("unwatched");
                     setClaimable(false);
+                     (window as any).handleStop()
                 }
             });
         });       
@@ -261,9 +265,9 @@ export default function Lootbox() {
           )}
         </div>
       </div>   
-    <div className="h-96 w-full" >     
-        <Canvas flat linear>
-        <color attach='background' args={["white"]} />
+    <div className="h-96 w-full rounded" >     
+        <Canvas flat linear className="rounded-lg">
+        <color attach='background' args={["blue"]} />
             <OrbitControls />
         <OrthographicCamera
             makeDefault
@@ -276,21 +280,36 @@ export default function Lootbox() {
             far={20}
             position={[0, 0, 1]}
         />
-        <directionalLight position={[0, 0, 5]} color="white" />
+        {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
         {/* <Circle /> */}
-        <RotatingCircle />
+        <RotatingCircle items={[{
+            text:"🔥",
+            color:"red"
+        },{
+            text:"🟢",
+            color:"green"
+        },{
+            text:"🔵",
+            color:"purple"
+        },{
+            text:"🟠",
+            color:"orange"
+        }] }/>
         {/* <Box /> */}
-            <EffectComposer>
+        
+            <EffectComposer>                          
              <ChromaticAberration
                 blendFunction={BlendFunction.NORMAL} // blend mode
-                offset={new THREE.Vector2(0.01, 0.02)} // color offset
+                offset={new THREE.Vector2(0.0, 0.0)} // color offset
                 radialModulation={true}
                 modulationOffset={0.} // shift effect
                 opacity={0.5}
                 />
             <Bloom luminanceThreshold={0.1} luminanceSmoothing={0.6} height={100} />
-               
+            
             </EffectComposer>
+             {/* <MotionBlur />   */}
+         
         </Canvas>
     </div>
     <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
@@ -302,7 +321,9 @@ export default function Lootbox() {
       </button>
     </div>
      <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">     
-        <button className="btn"  disabled={!claimable} onClick={()=>{ submitLootboxClaim()}}>
+        <button className="btn"  disabled={!claimable} onClick={()=>{ 
+          (window as any).handleStart()
+          submitLootboxClaim()}}>
             {getButtonMessage()}
         </button>
      </div>
