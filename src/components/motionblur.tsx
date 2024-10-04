@@ -25,7 +25,7 @@ export function MotionBlur() {
     // blend pass
     const blendPass = new ShaderPass(BlendShader, 'tDiffuse1')
     blendPass.uniforms['tDiffuse2'].value = savePass.renderTarget.texture
-    blendPass.uniforms['mixRatio'].value = 0.5
+    blendPass.uniforms['mixRatio'].value = .8
 
     // output pass
     const outputPass = new ShaderPass(CopyShader)

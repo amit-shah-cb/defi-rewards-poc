@@ -13,7 +13,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import { Canvas } from '@react-three/fiber'
 import { Bloom, EffectComposer, ChromaticAberration, Outline } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { OrbitControls, OrthographicCamera,  View as ViewImpl } from '@react-three/drei'
+import { OrbitControls, OrthographicCamera,  View as ViewImpl , CameraShake} from '@react-three/drei'
 import { Circle } from '@/components/spinner';
 
 extend({ TextGeometry })
@@ -77,6 +77,7 @@ export default function Lootbox() {
   const [claimable, setClaimable] = useState(false);
   const [claimCooldown, setClaimCooldown] = useState(null);
   const [points, setPoints ] = useState(null);
+  const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
     if(claimCooldown == null){
@@ -167,6 +168,7 @@ export default function Lootbox() {
   
   const submitLootboxClaim = async ()=>{
         console.log("Click");
+       
         const { connector } = getAccount(config)
         const claimFee = await getClaimFee();
         const balance = await getBalance(config,{
@@ -195,7 +197,7 @@ export default function Lootbox() {
             console.error(e);
             alert("Transaction failed");
             return
-        }
+        }        
 
         // let unwatch;
         // unwatch = watchContractEvent(config.getClient(), {
@@ -216,6 +218,9 @@ export default function Lootbox() {
                 value:claimFee,
                 connector
             } as any);
+
+        (window as any).handleStart()
+        setIsShaking(true);
         console.log("tx hash:",tx);
 
         waitForTransactionReceipt(config, {
@@ -235,6 +240,7 @@ export default function Lootbox() {
                     console.error(e);
                     unwatch();
                      (window as any).handleStop();
+                     setIsShaking(false);
                 },
                 onLogs(logs) {                
                     console.log(logs);
@@ -242,6 +248,7 @@ export default function Lootbox() {
                     console.log("unwatched");
                     setClaimable(false);
                      (window as any).handleStop()
+                     setIsShaking(false);
                 }
             });
         });       
@@ -281,23 +288,26 @@ export default function Lootbox() {
             position={[0, 0, 1]}
         />
         {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
+        {isShaking &&
+          <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={1.0 }/>
+        }
         {/* <Circle /> */}
         <RotatingCircle items={[{
             text:"🔥",
-            color:"red"
+            color:"white"
         },{
             text:"🟢",
-            color:"green"
+            color:"white"
         },{
             text:"🔵",
-            color:"purple"
+            color:"white"
         },{
             text:"🟠",
-            color:"orange"
+            color:"white"
         }] }/>
         {/* <Box /> */}
         
-            <EffectComposer>                          
+            {false && <EffectComposer>                          
              <ChromaticAberration
                 blendFunction={BlendFunction.NORMAL} // blend mode
                 offset={new THREE.Vector2(0.0, 0.0)} // color offset
@@ -307,8 +317,8 @@ export default function Lootbox() {
                 />
             <Bloom luminanceThreshold={0.1} luminanceSmoothing={0.6} height={100} />
             
-            </EffectComposer>
-             {/* <MotionBlur />   */}
+            </EffectComposer>}
+          {isShaking && <MotionBlur />}
          
         </Canvas>
     </div>
@@ -322,7 +332,7 @@ export default function Lootbox() {
     </div>
      <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">     
         <button className="btn"  disabled={!claimable} onClick={()=>{ 
-          (window as any).handleStart()
+          
           submitLootboxClaim()}}>
             {getButtonMessage()}
         </button>
