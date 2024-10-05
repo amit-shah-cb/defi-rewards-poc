@@ -14,61 +14,12 @@ import { Canvas } from '@react-three/fiber'
 import { Bloom, EffectComposer, ChromaticAberration, Outline } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { OrbitControls, OrthographicCamera,  View as ViewImpl , CameraShake} from '@react-three/drei'
-import { Circle } from '@/components/spinner';
-
-extend({ TextGeometry })
-
-import * as myFont from '@/fonts/font.json'
 import { config } from "@/components/provider";
 import { readContract,writeContract,simulateContract,getBalance, getAccount, waitForTransactionReceipt, watchContractEvent} from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
 import { RotatingCircle } from "./rotating";
 import { MotionBlur } from "./motionblur";
 
-
-declare module "@react-three/fiber" {
-  interface ThreeElements {
-    textGeometry: Object3DNode<TextGeometry, typeof TextGeometry>;
-  }
-}
-
-const font = new FontLoader().parse(myFont);
-
-function useInterval(callback, delay) {
-  const savedCallback = useRef();
-
-  // Remember the latest callback.
-  useEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
-
-  // Set up the interval.
-  useEffect(() => {
-    function tick() {
-      (savedCallback as any).current();
-    }
-    if (delay !== null) {
-      let id = setInterval(tick, delay);
-      return () => clearInterval(id);
-    }
-  }, [delay]);
-}
-
-
-const Box = () => {
-  const boxRef = useRef();
-
-  useFrame(() => {    
-    (boxRef.current as any).rotation.y += 0.01;
-  });
-
-  return (
-    <mesh ref={boxRef} rotation-x={Math.PI * 0.25} rotation-y={Math.PI * 0.25}>
-      <boxGeometry args={[2, 2, 2]} />
-      <meshStandardMaterial color={"white"} />
-    </mesh>
-  );
-};
 
 export default function Lootbox() {
 
@@ -273,12 +224,12 @@ export default function Lootbox() {
         </div>
       </div>   
     <div className="h-96 w-full rounded" >     
-        <Canvas flat linear className="rounded-lg">
+        <Canvas gl={{alpha:true,antialias:true}}  className="rounded-lg">
         <color attach='background' args={["white"]} />
             <OrbitControls />
         <OrthographicCamera
             makeDefault
-             zoom={120}
+             zoom={140}
             // top={20}
             // bottom={-20}
             // left={-40}
@@ -293,19 +244,19 @@ export default function Lootbox() {
         }
         {/* <Circle /> */}
         <RotatingCircle items={[{
-            text:"🔥",
+            text:"100pts",
             textColor:"white",
             color:"blue"
         },{
-            text:"🟢",
+            text:"200pts",
             textColor:"white",
             color:"blue"
         },{
-            text:"🔵",
+            text:"500pts",
             textColor:"white",
             color:"blue"
         },{
-            text:"🟠",
+            text:"1000pts",
             textColor:"white",
             color:"blue"
         }] }/>
@@ -319,7 +270,7 @@ export default function Lootbox() {
                 modulationOffset={0.01} // shift effect
                 opacity={0.5}
                 />
-            <Bloom luminanceThreshold={0.9} luminanceSmoothing={0.6} height={100} />
+            <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.6} height={100} />
             
             </EffectComposer>}
           {false && <MotionBlur />}

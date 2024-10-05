@@ -3,7 +3,8 @@ import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { MeshReflectorMaterial, OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSpring, animated, easings } from '@react-spring/three';
-import { set } from 'zod';
+import { typeWriterFont,britneyFont } from '@/components/font';
+
 
 export interface ArcItem{
     text: string;
@@ -32,7 +33,7 @@ export function Triangle() {
   return (
     <mesh>
       <bufferGeometry attach="geometry" {...geometry} />
-      <meshBasicMaterial attach="material" color="orange" />
+      <meshBasicMaterial  color="darkorange" />
     </mesh>
   );
 }
@@ -54,6 +55,15 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
       easing: easings.easeInQuad,
     },
   }));
+
+ const flashWedge = useSpring({
+    to: {backgroundColor: 'blue'},
+    from: {backgroundColor: 'green'},
+    delay: 100,
+    config: {duration: 200},
+    loop: true,
+  });
+
   const radius = 1;
   const TWO_PI = Math.PI * 2;
   const wedgeDistance = .02;
@@ -78,8 +88,18 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
     items.forEach(function(item:ArcItem,index) {
         item.color = "blue";
         item.textColor = "white";
+        (meshRef.current as any).children[1].children[index].children[0].material.color.set("blue");   
+        (meshRef.current as any).children[1].children[index].children[0].material.emissive.set("blue");
+        (meshRef.current as any).children[1].children[index].children[0].material.emissiveIntensity = 0.8;
+        (meshRef.current as any).children[1].children[index].children[1].material.color.set("white");
     });
   }
+
+  useEffect(() => {
+    if(!highlightWedge){
+        resetWedgeColors();
+    }
+  },[highlightWedge]);
 
   useFrame((state, delta) => {    
     //  console.log("wedgeIndex:",wedgeIndex);
@@ -88,9 +108,9 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
       (meshRef.current as any).rotation.z+= rotationSpeed;
     }    
     if(highlightWedge>=1) {
-        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.color.set("orange");   
-        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissive.set("orange");
-        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissiveIntensity = 2.1;
+        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.color.set("green");   
+        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissive.set("green");
+        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissiveIntensity = 5.81;
         (meshRef.current as any).children[1].children[highlightWedge-1].children[1].material.color.set("black");
     }
    
@@ -100,7 +120,6 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
     if (isStopping) {
       const currentRotation = (meshRef.current as any).rotation.z;
       const targetRotation = (Math.floor(currentRotation / (Math.PI * 2)) * Math.PI * 2) + (Math.PI *2) + Math.PI * .25;   
-    //   console.log("stopping");
       setHighlightWedge(1);            
       setSpringProps({  
         from: { rotation: currentRotation },
@@ -121,8 +140,7 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
     if (!isRotating) {
       const startRotation = (meshRef.current as any).rotation.z;
       const endRotation = startRotation + Math.PI *2  ; // Full rotation
-      setHighlightWedge(0);
-      resetWedgeColors();
+      setHighlightWedge(0);     
       setSpringProps({
         from: { rotation: startRotation },
         to: { rotation: endRotation },
@@ -169,7 +187,7 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
                 <meshBasicMaterial color="orange" opacity={0.1}/>
             </mesh> */}
             <mesh position={[0,0,.01]} rotation-z={Math.PI}>
-                <sphereGeometry args={[radius*.2, 128, ]} />
+                <sphereGeometry args={[radius*.15, 128, ]} />
                 <meshBasicMaterial color="white"/>
             </mesh>
       </group>
@@ -197,10 +215,10 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
                     <meshStandardMaterial 
                     color={item.color} 
                     emissive={new THREE.Color(item.color)} 
-                    // emissiveIntensity={1.8}
+                    emissiveIntensity={.8}
                     side={THREE.DoubleSide}/>
                 </mesh>
-                <Text
+                {/* <Text
                     key={item.text+index+"text"}
                     scale={[radius/6, radius/6, 0]}
                     color={item.textColor} // default
@@ -209,8 +227,11 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
                     // rotate-z={Math.PI * (index *(2/items.length))/2}
                 >
                     {(index+1)*100}pts
-                </Text>
-                
+                </Text> */}
+                 <mesh key={item.text+index+"text"} position={ [radius/4,radius/5,.1]} rotation-z={Math.PI*.25 }>              
+                      <textGeometry args={[item.text, {font:typeWriterFont, size:0.08, height: .0, depth:0., bevelEnabled:false }]}/>
+                      <meshBasicMaterial attach='material' color={item.textColor}/>
+                  </mesh>
             </group>
             
         )
@@ -235,7 +256,8 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
       </animated.mesh>
      
       <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
+      {/* <pointLight position={[10, 10, 10]} /> */}
+      
     </>
   );
 };
