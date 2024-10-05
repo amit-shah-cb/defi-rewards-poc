@@ -7,6 +7,7 @@ import { set } from 'zod';
 
 export interface ArcItem{
     text: string;
+    textColor:string;
     color: string;
     winString?: string;
     translation?: THREE.Vector3;
@@ -76,6 +77,7 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
   const resetWedgeColors = () => {
     items.forEach(function(item:ArcItem,index) {
         item.color = "blue";
+        item.textColor = "white";
     });
   }
 
@@ -201,8 +203,8 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
                 <Text
                     key={item.text+index+"text"}
                     scale={[radius/6, radius/6, 0]}
-                    color={item.color} // default
-                    position={ [radius/2.5,radius/2.5,.01]}
+                    color={item.textColor} // default
+                    position={ [radius/2.5,radius/2.5,.1]}
                     rotation-z={Math.PI*.25 }
                     // rotate-z={Math.PI * (index *(2/items.length))/2}
                 >

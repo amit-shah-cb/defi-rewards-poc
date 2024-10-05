@@ -294,15 +294,19 @@ export default function Lootbox() {
         {/* <Circle /> */}
         <RotatingCircle items={[{
             text:"🔥",
+            textColor:"white",
             color:"blue"
         },{
             text:"🟢",
+            textColor:"white",
             color:"blue"
         },{
             text:"🔵",
+            textColor:"white",
             color:"blue"
         },{
             text:"🟠",
+            textColor:"white",
             color:"blue"
         }] }/>
         {/* <Box /> */}
