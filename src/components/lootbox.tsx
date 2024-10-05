@@ -274,51 +274,51 @@ export default function Lootbox() {
       </div>   
     <div className="h-96 w-full rounded" >     
         <Canvas flat linear className="rounded-lg">
-        <color attach='background' args={["blue"]} />
+        <color attach='background' args={["white"]} />
             <OrbitControls />
         <OrthographicCamera
             makeDefault
-             zoom={100}
+             zoom={120}
             // top={20}
             // bottom={-20}
             // left={-40}
             // right={40}
             near={0}
             far={20}
-            position={[0, 0, 1]}
+            position={[0, 0, 2]}
         />
         {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
         {isShaking &&
-          <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={1.0 }/>
+          <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6 }/>
         }
         {/* <Circle /> */}
         <RotatingCircle items={[{
             text:"🔥",
-            color:"white"
+            color:"blue"
         },{
             text:"🟢",
-            color:"white"
+            color:"blue"
         },{
             text:"🔵",
-            color:"white"
+            color:"blue"
         },{
             text:"🟠",
-            color:"white"
+            color:"blue"
         }] }/>
         {/* <Box /> */}
         
-            {false && <EffectComposer>                          
+            {true && <EffectComposer>                          
              <ChromaticAberration
                 blendFunction={BlendFunction.NORMAL} // blend mode
-                offset={new THREE.Vector2(0.0, 0.0)} // color offset
+                offset={new THREE.Vector2(0.02, 0.02)} // color offset
                 radialModulation={true}
-                modulationOffset={0.} // shift effect
+                modulationOffset={0.01} // shift effect
                 opacity={0.5}
                 />
-            <Bloom luminanceThreshold={0.1} luminanceSmoothing={0.6} height={100} />
+            <Bloom luminanceThreshold={0.9} luminanceSmoothing={0.6} height={100} />
             
             </EffectComposer>}
-          {isShaking && <MotionBlur />}
+          {false && <MotionBlur />}
          
         </Canvas>
     </div>
