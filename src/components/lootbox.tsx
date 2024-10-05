@@ -11,10 +11,10 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 
 import { Canvas } from '@react-three/fiber'
-import { Bloom, EffectComposer, ChromaticAberration } from '@react-three/postprocessing'
+import { Bloom, EffectComposer, ChromaticAberration, Outline } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { OrbitControls, OrthographicCamera,  View as ViewImpl } from '@react-three/drei'
-
+import { OrbitControls, OrthographicCamera,  View as ViewImpl , CameraShake} from '@react-three/drei'
+import { Circle } from '@/components/spinner';
 
 extend({ TextGeometry })
 
@@ -22,6 +22,8 @@ import * as myFont from '@/fonts/font.json'
 import { config } from "@/components/provider";
 import { readContract,writeContract,simulateContract,getBalance, getAccount, waitForTransactionReceipt, watchContractEvent} from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
+import { RotatingCircle } from "./rotating";
+import { MotionBlur } from "./motionblur";
 
 
 declare module "@react-three/fiber" {
@@ -75,6 +77,7 @@ export default function Lootbox() {
   const [claimable, setClaimable] = useState(false);
   const [claimCooldown, setClaimCooldown] = useState(null);
   const [points, setPoints ] = useState(null);
+  const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
     if(claimCooldown == null){
@@ -135,6 +138,18 @@ export default function Lootbox() {
     }
   }, [address,claimCooldown,claimable])
 
+  useEffect(() => {
+    (window as any).handleStart = () => {
+      const event = new Event('startRotation');
+      window.dispatchEvent(event);
+    };
+
+    (window as any).handleStop = () => {
+      const event = new Event('stopRotation');
+      window.dispatchEvent(event);
+    };
+  }, []);
+ 
   const getButtonMessage = ()=>{       
         if(!claimable && claimedTime != null && claimCooldown != null){        
             return `🔒 ${new Date((claimedTime + claimCooldown)*1000).toLocaleString()} 🔒`;
@@ -153,6 +168,7 @@ export default function Lootbox() {
   
   const submitLootboxClaim = async ()=>{
         console.log("Click");
+       
         const { connector } = getAccount(config)
         const claimFee = await getClaimFee();
         const balance = await getBalance(config,{
@@ -181,7 +197,7 @@ export default function Lootbox() {
             console.error(e);
             alert("Transaction failed");
             return
-        }
+        }        
 
         // let unwatch;
         // unwatch = watchContractEvent(config.getClient(), {
@@ -202,6 +218,9 @@ export default function Lootbox() {
                 value:claimFee,
                 connector
             } as any);
+
+        (window as any).handleStart()
+        setIsShaking(true);
         console.log("tx hash:",tx);
 
         waitForTransactionReceipt(config, {
@@ -219,12 +238,17 @@ export default function Lootbox() {
                 poll:true,
                 onError:(e)=>{
                     console.error(e);
+                    unwatch();
+                     (window as any).handleStop();
+                     setIsShaking(false);
                 },
                 onLogs(logs) {                
                     console.log(logs);
                     unwatch();
                     console.log("unwatched");
                     setClaimable(false);
+                     (window as any).handleStop()
+                     setIsShaking(false);
                 }
             });
         });       
@@ -248,37 +272,68 @@ export default function Lootbox() {
           )}
         </div>
       </div>   
-    <div className="h-vdh w-full">     
-        <Canvas>
+    <div className="h-96 w-full rounded" >     
+        <Canvas flat linear className="rounded-lg">
         <color attach='background' args={["white"]} />
             <OrbitControls />
         <OrthographicCamera
             makeDefault
-            zoom={4}
-            top={10}
-            bottom={-10}
-            left={-20}
-            right={20}
-            near={1}
+             zoom={120}
+            // top={20}
+            // bottom={-20}
+            // left={-40}
+            // right={40}
+            near={0}
             far={20}
-            position={[0, 0, 5]}
+            position={[0, 0, 2]}
         />
-        <directionalLight position={[0, 0, 5]} color="white" />
-        <Box />
-            <EffectComposer>
-            <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.6} height={800} />
-                <ChromaticAberration
+        {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
+        {isShaking &&
+          <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6 }/>
+        }
+        {/* <Circle /> */}
+        <RotatingCircle items={[{
+            text:"🔥",
+            color:"blue"
+        },{
+            text:"🟢",
+            color:"blue"
+        },{
+            text:"🔵",
+            color:"blue"
+        },{
+            text:"🟠",
+            color:"blue"
+        }] }/>
+        {/* <Box /> */}
+        
+            {true && <EffectComposer>                          
+             <ChromaticAberration
                 blendFunction={BlendFunction.NORMAL} // blend mode
-                offset={new THREE.Vector2(0.01, 0.01)} // color offset
+                offset={new THREE.Vector2(0.02, 0.02)} // color offset
                 radialModulation={true}
-                modulationOffset={0.} // shift effect
-                opacity={0.8}
+                modulationOffset={0.01} // shift effect
+                opacity={0.5}
                 />
-            </EffectComposer>
+            <Bloom luminanceThreshold={0.9} luminanceSmoothing={0.6} height={100} />
+            
+            </EffectComposer>}
+          {false && <MotionBlur />}
+         
         </Canvas>
     </div>
+    <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
+      <button onClick={() => (window as any).handleStart()} className="mr-2 rounded bg-blue-500 px-4 py-2 text-white">
+      Start Rotation
+      </button>
+      <button onClick={() => (window as any).handleStop()} className="rounded bg-red-500 px-4 py-2 text-white">
+      Stop Rotation
+      </button>
+    </div>
      <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">     
-        <button className="btn"  disabled={!claimable} onClick={()=>{ submitLootboxClaim()}}>
+        <button className="btn"  disabled={!claimable} onClick={()=>{ 
+          
+          submitLootboxClaim()}}>
             {getButtonMessage()}
         </button>
      </div>
