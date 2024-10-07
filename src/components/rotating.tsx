@@ -121,7 +121,7 @@ export const RotatingCircle = ({items, rarity}:RotatingCircleProps) => {
         from: { rotation: currentRotation },
         to: { rotation: targetRotation },              
         config: {
-          duration: ((targetRotation-currentRotation)/rotationSpeed * 400),
+          duration: ((targetRotation-currentRotation)/rotationSpeed * 200),
           easing: easings.easeOutElastic,
         },
         onRest: () => {                 
