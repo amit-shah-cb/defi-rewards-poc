@@ -17,7 +17,7 @@ import { OrbitControls, OrthographicCamera,  View as ViewImpl , CameraShake} fro
 import { config } from "@/components/provider";
 import { readContract,writeContract,simulateContract,getBalance, getAccount, waitForTransactionReceipt, watchContractEvent} from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
-import { RotatingCircle } from "./rotating";
+import { RotateState, RotatingCircle } from "./rotating";
 import { MotionBlur } from "./motionblur";
 import { ThreeEffects } from "./effects";
 
@@ -34,6 +34,7 @@ export default function Lootbox(props:LootboxProps) {
   const [points, setPoints ] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
   const [rarity, setRarity] = useState(null);
+  const [rotationsState, setRotationsState] = useState(RotateState.STOPPED);
 
   useEffect(() => {
     if(claimCooldown == null){
@@ -130,7 +131,6 @@ export default function Lootbox(props:LootboxProps) {
   
   const submitLootboxClaim = async ()=>{
         console.log("Click");
-        setRarity(null);
         const { connector } = getAccount(config)
         const claimFee = await getClaimFee();
         const balance = await getBalance(config,{
@@ -169,7 +169,8 @@ export default function Lootbox(props:LootboxProps) {
                 connector
             } as any);
 
-        (window as any).handleStart()
+        setRarity(null);
+        setRotationsState(RotateState.START);
         setIsShaking(true);
         console.log("tx hash:",tx);
 
@@ -189,7 +190,8 @@ export default function Lootbox(props:LootboxProps) {
                 onError:(e)=>{
                     console.error(e);
                     unwatch();
-                     (window as any).handleStop();
+                    setRarity(null);
+                    setRotationsState(RotateState.STOP_ROTATING);
                      setIsShaking(false);
                 },
                 onLogs(logs) {      
@@ -200,6 +202,7 @@ export default function Lootbox(props:LootboxProps) {
                     });         
                     console.log(decodedLog);
                     setRarity(Number((decodedLog as any).args.lootBoxRarity));
+                    setRotationsState(RotateState.STOP_ROTATING);
                     unwatch();
                     console.log("unwatched");
                     setClaimable(false);
@@ -260,7 +263,7 @@ export default function Lootbox(props:LootboxProps) {
             text:"1000pts",
             textColor:"white",
             color:"blue"
-        }]} rarity={rarity}/>
+        }]} rotationState={rotationsState} rarity={rarity}/>
         {/* <Box /> */}
             <ThreeEffects motionBlurEnabled={false} />
             {false && <EffectComposer>                          
@@ -281,11 +284,14 @@ export default function Lootbox(props:LootboxProps) {
     <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
       <button onClick={() => {
         setRarity(null);
-        (window as any).handleStart();
+        setRotationsState(RotateState.START);
         }} className="mr-2 rounded bg-blue-500 px-4 py-2 text-white">
       Start Rotation
       </button>
-      <button onClick={() => (window as any).handleStop()} className="rounded bg-red-500 px-4 py-2 text-white">
+      <button onClick={() => {
+        setRotationsState(RotateState.STOP_ROTATING);
+      }}
+       className="rounded bg-red-500 px-4 py-2 text-white">
       Stop Rotation
       </button>
     </div>

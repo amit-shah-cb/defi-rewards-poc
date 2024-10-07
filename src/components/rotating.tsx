@@ -6,6 +6,14 @@ import { useSpring, animated, easings } from '@react-spring/three';
 import { typeWriterFont,britneyFont } from '@/components/font';
 
 
+export enum RotateState {
+    STOPPED,
+    START,
+    ROTATING,
+    STOP_ROTATING,
+    ERROR
+}
+
 export interface ArcItem{
     text: string;
     textColor:string;
@@ -15,6 +23,7 @@ export interface ArcItem{
 }
 export interface RotatingCircleProps {
   items: ArcItem[];
+  rotationState?: RotateState;
   rarity?: number;
 }
 export function Triangle() {
@@ -39,13 +48,12 @@ export function Triangle() {
   );
 }
 
-export const RotatingCircle = ({items, rarity}:RotatingCircleProps) => {
+export const RotatingCircle = ({items, rotationState, rarity}:RotatingCircleProps) => {
   const debugMap = useLoader(THREE.TextureLoader, 'https://threejs.org/examples/textures/uv_grid_opengl.jpg')
   const meshRef = useRef();
   const [isRotating, setIsRotating] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [highlightWedge, setHighlightWedge] = useState(0);
-  const [targetRotation, setTargetRotation] = useState(null);
   const rotationSpeed = Math.PI * .1;
   
   const [springProps, setSpringProps] = useSpring(() => ({
@@ -91,6 +99,14 @@ export const RotatingCircle = ({items, rarity}:RotatingCircleProps) => {
         resetWedgeColors();
     }
   },[highlightWedge]);
+
+  useEffect(()=>{
+    if(rotationState === RotateState.START){
+        handleStart();
+    }else if(rotationState === RotateState.STOP_ROTATING){
+        handleStop();
+    }
+  },[rotationState]);
 
   useFrame((state, delta) => {    
     //  console.log("wedgeIndex:",wedgeIndex);
@@ -165,18 +181,6 @@ export const RotatingCircle = ({items, rarity}:RotatingCircleProps) => {
       setIsStopping(true);      
     }
   };
-
-  
-
-  useEffect(() => {
-    window.addEventListener('startRotation', handleStart);
-    window.addEventListener('stopRotation', handleStop);
-
-    return () => {
-      window.removeEventListener('startRotation', handleStart);
-      window.removeEventListener('stopRotation', handleStop);
-    };
-  });
 
   return (
     <>
