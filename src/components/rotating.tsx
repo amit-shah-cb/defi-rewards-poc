@@ -15,6 +15,7 @@ export interface ArcItem{
 }
 export interface RotatingCircleProps {
   items: ArcItem[];
+  rarity?: number;
 }
 export function Triangle() {
   const geometry = useMemo(() => {
@@ -33,12 +34,12 @@ export function Triangle() {
   return (
     <mesh>
       <bufferGeometry attach="geometry" {...geometry} />
-      <meshBasicMaterial  color="darkorange" />
+      <meshBasicMaterial  color="#c35817" />
     </mesh>
   );
 }
 
-export const RotatingCircle = ({items}:RotatingCircleProps) => {
+export const RotatingCircle = ({items, rarity}:RotatingCircleProps) => {
   const debugMap = useLoader(THREE.TextureLoader, 'https://threejs.org/examples/textures/uv_grid_opengl.jpg')
   const meshRef = useRef();
   const [isRotating, setIsRotating] = useState(false);
@@ -46,8 +47,7 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
   const [highlightWedge, setHighlightWedge] = useState(0);
   const [targetRotation, setTargetRotation] = useState(null);
   const rotationSpeed = Math.PI * .1;
-  const selectedWedgge = useRef(0);
-
+  
   const [springProps, setSpringProps] = useSpring(() => ({
     rotation: 0,
     config: {
@@ -56,19 +56,12 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
     },
   }));
 
- const flashWedge = useSpring({
-    to: {backgroundColor: 'blue'},
-    from: {backgroundColor: 'green'},
-    delay: 100,
-    config: {duration: 200},
-    loop: true,
-  });
-
   const radius = 1;
   const TWO_PI = Math.PI * 2;
   const wedgeDistance = .02;
   const wedge = (TWO_PI/items.length);
   const halfPointWedge= wedge/2;
+
   const findTranslation = (index:number):THREE.Vector3=>{    
     const rotation = halfPointWedge + (index)*wedge;
     if(rotation <= Math.PI * 0.5|| (rotation >= Math.PI && rotation <= TWO_PI*.75)){
@@ -85,9 +78,7 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
     })  
 
   const resetWedgeColors = () => {
-    items.forEach(function(item:ArcItem,index) {
-        item.color = "blue";
-        item.textColor = "white";
+    items.forEach(function(item:ArcItem,index) {       
         (meshRef.current as any).children[1].children[index].children[0].material.color.set("blue");   
         (meshRef.current as any).children[1].children[index].children[0].material.emissive.set("blue");
         (meshRef.current as any).children[1].children[index].children[0].material.emissiveIntensity = 0.8;
@@ -108,22 +99,27 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
       (meshRef.current as any).rotation.z+= rotationSpeed;
     }    
     if(highlightWedge>=1) {
-        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.color.set("green");   
-        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissive.set("green");
-        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissiveIntensity = 5.81;
+        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.color.set("#e56717");   
+        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissive.set("#e56717");
+        (meshRef.current as any).children[1].children[highlightWedge-1].children[0].material.emissiveIntensity = 4.3036;
         (meshRef.current as any).children[1].children[highlightWedge-1].children[1].material.color.set("black");
+
     }
    
   });
 
   useEffect(() => {
-    if (isStopping) {
+    if (isStopping && rarity>=0) {
+        const index = rarity+1;
+      const selection = ((index-1) * wedge) + halfPointWedge;
+      console.log("selection:",selection);
       const currentRotation = (meshRef.current as any).rotation.z;
-      const targetRotation = (Math.floor(currentRotation / (Math.PI * 2)) * Math.PI * 2) + (Math.PI *2) + Math.PI * .25;   
-      setHighlightWedge(1);            
+      console.log("currentRotation:",currentRotation);
+      const targetRotation = (Math.floor(currentRotation / (Math.PI * 2)) * Math.PI * 2)+ 2*(Math.PI *2) - (rarity*wedge) + halfPointWedge;// + selection;// Math.PI * .25;   
+      setHighlightWedge(index);            
       setSpringProps({  
         from: { rotation: currentRotation },
-        to: { rotation: targetRotation },      
+        to: { rotation: targetRotation },              
         config: {
           duration: ((targetRotation-currentRotation)/rotationSpeed * 400),
           easing: easings.easeOutElastic,
@@ -134,13 +130,20 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
         
       });
     }
-  }, [isStopping]);
+  }, [isStopping,rarity]);
+
+  useEffect(()=>{
+    if(!isRotating && !rarity){
+        // handleStart();
+    }
+  },[isRotating,rarity]);
 
   const handleStart = () => {
-    if (!isRotating) {
+    console.log("called handleStart:",rarity);
+    if (!isRotating && !rarity) {
       const startRotation = (meshRef.current as any).rotation.z;
       const endRotation = startRotation + Math.PI *2  ; // Full rotation
-      setHighlightWedge(0);     
+      setHighlightWedge(0);      
       setSpringProps({
         from: { rotation: startRotation },
         to: { rotation: endRotation },
@@ -173,7 +176,7 @@ export const RotatingCircle = ({items}:RotatingCircleProps) => {
       window.removeEventListener('startRotation', handleStart);
       window.removeEventListener('stopRotation', handleStop);
     };
-  }, [isRotating]);
+  });
 
   return (
     <>

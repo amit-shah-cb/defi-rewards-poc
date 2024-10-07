@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount, useBalance, useEnsName, useWatchContractEvent } from "wagmi";
-import { bytesToBigInt, formatBlock, formatUnits } from "viem";
+import { bytesToBigInt, decodeEventLog, formatBlock, formatUnits } from "viem";
 import {  useEffect, useRef, useState } from "react";
 
 import * as THREE from 'three'
@@ -19,9 +19,13 @@ import { readContract,writeContract,simulateContract,getBalance, getAccount, wai
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
 import { RotatingCircle } from "./rotating";
 import { MotionBlur } from "./motionblur";
+import { ThreeEffects } from "./effects";
 
+export interface LootboxProps {
+    shakeEnabled?: boolean;
+}
 
-export default function Lootbox() {
+export default function Lootbox({shakeEnabled}) {
 
   const { address } = useAccount();
   const [claimedTime, setClaimedTime ] = useState(null);  
@@ -29,6 +33,7 @@ export default function Lootbox() {
   const [claimCooldown, setClaimCooldown] = useState(null);
   const [points, setPoints ] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
+  const [rarity, setRarity] = useState(null);
 
   useEffect(() => {
     if(claimCooldown == null){
@@ -101,6 +106,12 @@ export default function Lootbox() {
     };
   }, []);
  
+  useEffect(()=>{
+    if(rarity != null){
+      (window as any).handleStop();
+      setIsShaking(false);
+    }
+  },[rarity])
   const getButtonMessage = ()=>{       
         if(!claimable && claimedTime != null && claimCooldown != null){        
             return `🔒 ${new Date((claimedTime + claimCooldown)*1000).toLocaleString()} 🔒`;
@@ -119,7 +130,7 @@ export default function Lootbox() {
   
   const submitLootboxClaim = async ()=>{
         console.log("Click");
-       
+        setRarity(null);
         const { connector } = getAccount(config)
         const claimFee = await getClaimFee();
         const balance = await getBalance(config,{
@@ -149,18 +160,6 @@ export default function Lootbox() {
             alert("Transaction failed");
             return
         }        
-
-        // let unwatch;
-        // unwatch = watchContractEvent(config.getClient(), {
-        //     address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
-        //     abi:PointsUpgradableAbi,
-        //     eventName: 'LootBoxOpened',            
-        //     onLogs(logs) {                
-        //         console.log("Lootbox opened with rarity:"+logs[0].args.lootBoxRarity);
-        //         unwatch();
-        //     },
-        // })
-        // console.log("setup log watching");
         const tx = await writeContract(config, {
                 abi: PointsUpgradableAbi, 
                 address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
@@ -193,18 +192,20 @@ export default function Lootbox() {
                      (window as any).handleStop();
                      setIsShaking(false);
                 },
-                onLogs(logs) {                
-                    console.log(logs);
+                onLogs(logs) {      
+                    const decodedLog = decodeEventLog({
+                      abi: PointsUpgradableAbi,
+                      data: logs[0].data,
+                      topics: logs[0].topics,
+                    });         
+                    console.log(decodedLog);
+                    setRarity(Number((decodedLog as any).args.lootBoxRarity));
                     unwatch();
                     console.log("unwatched");
                     setClaimable(false);
-                     (window as any).handleStop()
-                     setIsShaking(false);
                 }
             });
         });       
-        
-       
   }
 
   return (
@@ -239,7 +240,7 @@ export default function Lootbox() {
             position={[0, 0, 2]}
         />
         {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
-        {isShaking &&
+        {shakeEnabled && isShaking &&
           <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6 }/>
         }
         {/* <Circle /> */}
@@ -259,10 +260,10 @@ export default function Lootbox() {
             text:"1000pts",
             textColor:"white",
             color:"blue"
-        }] }/>
+        }]} rarity={rarity}/>
         {/* <Box /> */}
-        
-            {true && <EffectComposer>                          
+            <ThreeEffects motionBlurEnabled={false} />
+            {false && <EffectComposer>                          
              <ChromaticAberration
                 blendFunction={BlendFunction.NORMAL} // blend mode
                 offset={new THREE.Vector2(0.02, 0.02)} // color offset
@@ -278,7 +279,10 @@ export default function Lootbox() {
         </Canvas>
     </div>
     <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
-      <button onClick={() => (window as any).handleStart()} className="mr-2 rounded bg-blue-500 px-4 py-2 text-white">
+      <button onClick={() => {
+        setRarity(null);
+        (window as any).handleStart();
+        }} className="mr-2 rounded bg-blue-500 px-4 py-2 text-white">
       Start Rotation
       </button>
       <button onClick={() => (window as any).handleStop()} className="rounded bg-red-500 px-4 py-2 text-white">
