@@ -25,7 +25,7 @@ export interface LootboxProps {
     shakeEnabled?: boolean;
 }
 
-export default function Lootbox({shakeEnabled}) {
+export default function Lootbox(props:LootboxProps) {
 
   const { address } = useAccount();
   const [claimedTime, setClaimedTime ] = useState(null);  
@@ -240,7 +240,7 @@ export default function Lootbox({shakeEnabled}) {
             position={[0, 0, 2]}
         />
         {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
-        {shakeEnabled && isShaking &&
+        {props.shakeEnabled && isShaking &&
           <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6 }/>
         }
         {/* <Circle /> */}
