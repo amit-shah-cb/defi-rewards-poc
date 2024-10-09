@@ -7,10 +7,11 @@ import {
   useChainModal,
 } from "@rainbow-me/rainbowkit";
 import { useAccount, useDisconnect } from "wagmi";
+import { useProfile } from "@/hooks/useProfile";
 
 export const ConnectBtn = () => {
   const { isConnecting, address, isConnected, chain } = useAccount();
-  
+
 
   const { openConnectModal } = useConnectModal();
   const { openAccountModal } = useAccountModal();
@@ -18,6 +19,8 @@ export const ConnectBtn = () => {
   const { disconnect } = useDisconnect();
 
   const isMounted = useRef(false);
+
+  const profile = useProfile(address);
 
   useEffect(() => {
     isMounted.current = true;
@@ -36,7 +39,7 @@ export const ConnectBtn = () => {
         }}
         disabled={isConnecting}
       >
-        { isConnecting ? 'Connecting...' : 'Click to connect' }
+        {isConnecting ? <span className="loading loading-spinner"></span> : 'Connect'}
       </button>
     );
   }
@@ -50,22 +53,25 @@ export const ConnectBtn = () => {
   }
 
   return (
-    <div className="flex w-full max-w-5xl items-center justify-between">
+    <div className="flex w-full max-w-5xl items-center justify-end">
       <div
-        className="flex cursor-pointer items-center justify-center gap-x-2 rounded-xl  px-4 py-2 font-mono font-bold"
+        className="flex cursor-pointer items-center justify-center gap-x-2 rounded-full  px-4 py-2 font-mono font-bold bg-[#eef0f3]"
         onClick={async () => openAccountModal?.()}
       >
         <div
           role="button"
           tabIndex={1}
           className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full"
-          style={{      
-            backgroundColor: "white",      
+          style={{
+            backgroundColor: "white",
             boxShadow: "0px 2px 2px 0px rgba(81, 98, 255, 0.20)",
           }}
         >
+
         </div>
-        <p>Wallet</p>
+        <div className="max-w-40 text-ellipsis overflow-hidden">
+          <p className="text-ellipsis overflow-hidden">{profile ?? address}</p>
+        </div>
       </div>
     </div>
   );

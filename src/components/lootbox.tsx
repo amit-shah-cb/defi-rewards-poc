@@ -2,98 +2,99 @@
 
 import { useAccount, useBalance, useEnsName, useWatchContractEvent } from "wagmi";
 import { bytesToBigInt, decodeEventLog, formatBlock, formatUnits } from "viem";
-import {  useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import * as THREE from 'three'
 
-import { extend, Object3DNode, useFrame} from '@react-three/fiber'
+import { extend, Object3DNode, useFrame } from '@react-three/fiber'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 
 import { Canvas } from '@react-three/fiber'
 import { Bloom, EffectComposer, ChromaticAberration, Outline } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { OrbitControls, OrthographicCamera,  View as ViewImpl , CameraShake} from '@react-three/drei'
+import { OrbitControls, OrthographicCamera, View as ViewImpl, CameraShake } from '@react-three/drei'
 import { config } from "@/components/provider";
-import { readContract,writeContract,simulateContract,getBalance, getAccount, waitForTransactionReceipt, watchContractEvent} from '@wagmi/core';
+import { readContract, writeContract, simulateContract, getBalance, getAccount, waitForTransactionReceipt, watchContractEvent } from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
 import { RotateState, RotatingCircle } from "./rotating";
 import { MotionBlur } from "./motionblur";
 import { ThreeEffects } from "./effects";
+import { Balance } from "./Balance";
 
 export interface LootboxProps {
-    shakeEnabled?: boolean;
+  shakeEnabled?: boolean;
 }
 
-export default function Lootbox(props:LootboxProps) {
+export default function Lootbox(props: LootboxProps) {
 
   const { address } = useAccount();
-  const [claimedTime, setClaimedTime ] = useState(null);  
+  const [claimedTime, setClaimedTime] = useState(null);
   const [claimable, setClaimable] = useState(false);
   const [claimCooldown, setClaimCooldown] = useState(null);
-  const [points, setPoints ] = useState(null);
+  const [points, setPoints] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
   const [rarity, setRarity] = useState(null);
   const [rotationsState, setRotationsState] = useState(RotateState.STOPPED);
 
   useEffect(() => {
-    if(claimCooldown == null){
-        readContract(config, {
-            abi: PointsUpgradableAbi, 
-            address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
-            functionName:"getClaimCooldown", 
-            args:[] 
-        }).then((data) => {
-            setClaimCooldown(Number(data as bigint));
-        });
+    if (claimCooldown == null) {
+      readContract(config, {
+        abi: PointsUpgradableAbi,
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        functionName: "getClaimCooldown",
+        args: []
+      }).then((data) => {
+        setClaimCooldown(Number(data as bigint));
+      });
     }
-  },[]) 
+  }, [])
 
   useEffect(() => {
-        if(address!=null){
-            readContract(config, {
-                abi: PointsUpgradableAbi, 
-                address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
-                functionName:"balanceOf", 
-                args:[address] 
-            }).then((data) => {
-                console.log("user points:",data);
-                setPoints(data);
-            });
+    if (address != null) {
+      readContract(config, {
+        abi: PointsUpgradableAbi,
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        functionName: "balanceOf",
+        args: [address]
+      }).then((data) => {
+        console.log("user points:", data);
+        setPoints(data);
+      });
+    }
+  }, [address, claimable])
+
+  useEffect(() => {
+    if (address != null && claimCooldown != null) {
+      readContract(config, {
+        abi: PointsUpgradableAbi,
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        functionName: "getLastClaimed",
+        args: [address]
+      }).then((data) => {
+        console.log("WE GOT DATA:", data);
+        const lastClaimedTime = Number(data as bigint);
+        setClaimedTime(lastClaimedTime);
+        const currentTimeSecs = (new Date()).getTime() / 1000;
+        if (lastClaimedTime === 0 || (currentTimeSecs - lastClaimedTime > claimCooldown)) {
+          console.log("CLAIMABLE");
+          setClaimable(true);
+        } else {
+          console.log("NOT CLAIMABLE:", ((lastClaimedTime + claimCooldown) - currentTimeSecs) * 1000);
+          let context = setTimeout(() => {
+            console.log("CALLING SET CLAIMABLE");
+            setClaimable(true);
+          }, ((lastClaimedTime + claimCooldown) - currentTimeSecs) * 1000);
+
+          return () => {
+            console.log("CLEARING TIMEOUT");
+            clearTimeout(context)
+          };
         }
-    },[address,claimable])
 
-  useEffect(() => {
-    if(address !=null && claimCooldown != null){
-        readContract(config, {
-            abi: PointsUpgradableAbi, 
-            address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
-            functionName:"getLastClaimed", 
-            args:[address] 
-        }).then((data) => {
-            console.log("WE GOT DATA:",data);     
-            const lastClaimedTime = Number(data as bigint);  
-            setClaimedTime(lastClaimedTime);
-            const currentTimeSecs = (new Date()).getTime()/1000;                     
-            if(lastClaimedTime === 0 || (currentTimeSecs - lastClaimedTime > claimCooldown)){
-                console.log("CLAIMABLE");
-                setClaimable(true);
-            }else{
-                console.log("NOT CLAIMABLE:",( (lastClaimedTime + claimCooldown)- currentTimeSecs)*1000);
-                let context = setTimeout(()=>{
-                    console.log("CALLING SET CLAIMABLE");
-                    setClaimable(true);
-                },((lastClaimedTime + claimCooldown)- currentTimeSecs)*1000);
-                
-                return ()=>{
-                  console.log("CLEARING TIMEOUT");
-                  clearTimeout(context)
-                };
-            }
-            
-        });
+      });
     }
-  }, [address,claimCooldown,claimable])
+  }, [address, claimCooldown, claimable])
 
   useEffect(() => {
     (window as any).handleStart = () => {
@@ -106,134 +107,122 @@ export default function Lootbox(props:LootboxProps) {
       window.dispatchEvent(event);
     };
   }, []);
- 
-  useEffect(()=>{
-    if(rarity != null){
+
+  useEffect(() => {
+    if (rarity != null) {
       (window as any).handleStop();
       setIsShaking(false);
     }
-  },[rarity])
-  const getButtonMessage = ()=>{       
-        if(!claimable && claimedTime != null && claimCooldown != null){        
-            return `🔒 ${new Date((claimedTime + claimCooldown)*1000).toLocaleString()} 🔒`;
-        }
-        return "🔥 Claim Lootbox 🔥";
+  }, [rarity])
+  const getButtonMessage = () => {
+    if (!claimable && claimedTime != null && claimCooldown != null) {
+      return `🔒 ${new Date((claimedTime + claimCooldown) * 1000).toLocaleString()} 🔒`;
     }
+    return "Spin the wheel";
+  }
 
-  const getClaimFee = async ()=>{
+  const getClaimFee = async () => {
     const fee = await readContract(config, {
-        abi: PointsUpgradableAbi, 
-        address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
-        functionName:"getLoopBoxClaimFee",          
+      abi: PointsUpgradableAbi,
+      address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+      functionName: "getLoopBoxClaimFee",
     });
     return fee;
   }
-  
-  const submitLootboxClaim = async ()=>{
-        console.log("Click");
-        const { connector } = getAccount(config)
-        const claimFee = await getClaimFee();
-        const balance = await getBalance(config,{
-            address
-        });
-        if(balance.value < claimFee){
-            alert("Insufficient balance");
-            return;
+
+  const submitLootboxClaim = async () => {
+    console.log("Click");
+    const { connector } = getAccount(config)
+    const claimFee = await getClaimFee();
+    const balance = await getBalance(config, {
+      address
+    });
+    if (balance.value < claimFee) {
+      alert("Insufficient balance");
+      return;
+    }
+    console.log("claimFee", claimFee);
+    console.log("balance", balance);
+    const randomBytes = crypto.getRandomValues(new Uint8Array(32))
+    const randomHexValue = bytesToBigInt(randomBytes)
+
+    try {
+      const simulation = await simulateContract(config, {
+        abi: PointsUpgradableAbi,
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        functionName: "claimLootBoxWithEntropy",
+        args: [randomHexValue],
+        value: claimFee,
+        connector,
+        from: address
+      })
+    } catch (e) {
+      console.error(e);
+      alert("Transaction failed");
+      return
+    }
+    const tx = await writeContract(config, {
+      abi: PointsUpgradableAbi,
+      address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+      functionName: "claimLootBoxWithEntropy",
+      args: [randomHexValue],
+      value: claimFee,
+      connector
+    } as any);
+
+    setRarity(null);
+    setRotationsState(RotateState.START);
+    setIsShaking(true);
+    console.log("tx hash:", tx);
+
+    waitForTransactionReceipt(config, {
+      hash: tx
+    }).then(async (receipt) => {
+      console.log("receipt", receipt);
+      let unwatch = watchContractEvent(config, {
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        abi: PointsUpgradableAbi,
+        eventName: 'LootBoxOpened',
+        args: {
+          claimer: address
+        },
+        fromBlock: receipt.blockNumber,
+        poll: true,
+        onError: (e) => {
+          console.error(e);
+          unwatch();
+          setRarity(null);
+          setRotationsState(RotateState.STOP_ROTATING);
+          setIsShaking(false);
+        },
+        onLogs(logs) {
+          const decodedLog = decodeEventLog({
+            abi: PointsUpgradableAbi,
+            data: logs[0].data,
+            topics: logs[0].topics,
+          });
+          console.log(decodedLog);
+          setRarity(Number((decodedLog as any).args.lootBoxRarity));
+          setRotationsState(RotateState.STOP_ROTATING);
+          unwatch();
+          console.log("unwatched");
+          setClaimable(false);
         }
-        console.log("claimFee",claimFee);
-        console.log("balance",balance);
-        const randomBytes = crypto.getRandomValues(new Uint8Array(32))
-        const randomHexValue = bytesToBigInt(randomBytes)
-        
-        try{
-            const simulation = await simulateContract(config, {
-                abi: PointsUpgradableAbi, 
-                address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
-                functionName:"claimLootBoxWithEntropy",      
-                args:[randomHexValue],  
-                value:claimFee,
-                connector,
-                from:address
-            })
-        }catch(e){
-            console.error(e);
-            alert("Transaction failed");
-            return
-        }        
-        const tx = await writeContract(config, {
-                abi: PointsUpgradableAbi, 
-                address:process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`, 
-                functionName:"claimLootBoxWithEntropy",      
-                args:[randomHexValue],  
-                value:claimFee,
-                connector
-            } as any);
-
-        setRarity(null);
-        setRotationsState(RotateState.START);
-        setIsShaking(true);
-        console.log("tx hash:",tx);
-
-        waitForTransactionReceipt(config, {
-            hash:tx
-        }).then(async (receipt)=>{
-            console.log("receipt",receipt);    
-             let unwatch = watchContractEvent(config, {
-                address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
-                abi:PointsUpgradableAbi,
-                eventName: 'LootBoxOpened',
-                args: {
-                    claimer:address
-                },
-                fromBlock:receipt.blockNumber,
-                poll:true,
-                onError:(e)=>{
-                    console.error(e);
-                    unwatch();
-                    setRarity(null);
-                    setRotationsState(RotateState.STOP_ROTATING);
-                     setIsShaking(false);
-                },
-                onLogs(logs) {      
-                    const decodedLog = decodeEventLog({
-                      abi: PointsUpgradableAbi,
-                      data: logs[0].data,
-                      topics: logs[0].topics,
-                    });         
-                    console.log(decodedLog);
-                    setRarity(Number((decodedLog as any).args.lootBoxRarity));
-                    setRotationsState(RotateState.STOP_ROTATING);
-                    unwatch();
-                    console.log("unwatched");
-                    setClaimable(false);
-                }
-            });
-        });       
+      });
+    });
   }
 
   return (
-   <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-     
-     <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
-        <h2 className={`mb-3 text-2xl font-semibold`}>Points Balance</h2>
-        <div className={`m-0 max-w-[30ch] text-xl opacity-50`}>
-          {points ? (
-            <p>              
-              {Number(formatUnits(points,6)).toFixed(6)}{" "}
-              PTS
-            </p>
-          ) : (
-            <p>0 PTS</p>
-          )}
-        </div>
-      </div>   
-    <div className="h-96 w-full rounded" >     
-        <Canvas gl={{alpha:true,antialias:true}}  className="rounded-lg">
-        <color attach='background' args={["white"]} />
-            <OrbitControls />
-        <OrthographicCamera
+    <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
+
+      <Balance points={points} />
+      <div className="h-96 w-full rounded" >
+        <Canvas gl={{ alpha: true, antialias: true }} className="rounded-lg">
+          <color attach='background' args={["white"]} />
+          <OrbitControls />
+          <OrthographicCamera
             makeDefault
-             zoom={140}
+            zoom={140}
             // top={20}
             // bottom={-20}
             // left={-40}
@@ -241,67 +230,67 @@ export default function Lootbox(props:LootboxProps) {
             near={0}
             far={20}
             position={[0, 0, 2]}
-        />
-        {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
-        {props.shakeEnabled && isShaking &&
-          <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6 }/>
-        }
-        {/* <Circle /> */}
-        <RotatingCircle items={[{
-            text:"100pts",
-            textColor:"white",
-            color:"blue"
-        },{
-            text:"200pts",
-            textColor:"white",
-            color:"blue"
-        },{
-            text:"500pts",
-            textColor:"white",
-            color:"blue"
-        },{
-            text:"1000pts",
-            textColor:"white",
-            color:"blue"
-        }]} rotationState={rotationsState} rarity={rarity}/>
-        {/* <Box /> */}
-            <ThreeEffects motionBlurEnabled={false} />
-            {false && <EffectComposer>                          
-             <ChromaticAberration
-                blendFunction={BlendFunction.NORMAL} // blend mode
-                offset={new THREE.Vector2(0.02, 0.02)} // color offset
-                radialModulation={true}
-                modulationOffset={0.01} // shift effect
-                opacity={0.5}
-                />
+          />
+          {/* <directionalLight position={[0, 0, 5]} color="white" /> */}
+          {props.shakeEnabled && isShaking &&
+            <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6} />
+          }
+          {/* <Circle /> */}
+          <RotatingCircle items={[{
+            text: "100pts",
+            textColor: "white",
+            color: "blue"
+          }, {
+            text: "200pts",
+            textColor: "white",
+            color: "blue"
+          }, {
+            text: "500pts",
+            textColor: "white",
+            color: "blue"
+          }, {
+            text: "1000pts",
+            textColor: "white",
+            color: "blue"
+          }]} rotationState={rotationsState} rarity={rarity} />
+          {/* <Box /> */}
+          <ThreeEffects motionBlurEnabled={false} />
+          {false && <EffectComposer>
+            <ChromaticAberration
+              blendFunction={BlendFunction.NORMAL} // blend mode
+              offset={new THREE.Vector2(0.02, 0.02)} // color offset
+              radialModulation={true}
+              modulationOffset={0.01} // shift effect
+              opacity={0.5}
+            />
             <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.6} height={100} />
-            
-            </EffectComposer>}
+
+          </EffectComposer>}
           {false && <MotionBlur />}
-         
+
         </Canvas>
-    </div>
-    <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
-      <button onClick={() => {
-        setRarity(null);
-        setRotationsState(RotateState.START);
+      </div>
+      <div style={{ position: 'absolute', bottom: '10px', left: '10px' }}>
+        <button onClick={() => {
+          setRarity(null);
+          setRotationsState(RotateState.START);
         }} className="mr-2 rounded bg-blue-500 px-4 py-2 text-white">
-      Start Rotation
-      </button>
-      <button onClick={() => {
-        setRotationsState(RotateState.STOP_ROTATING);
-      }}
-       className="rounded bg-red-500 px-4 py-2 text-white">
-      Stop Rotation
-      </button>
-    </div>
-     <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">     
-        <button className="btn"  disabled={!claimable} onClick={()=>{ 
-          
-          submitLootboxClaim()}}>
-            {getButtonMessage()}
+          Start Rotation
         </button>
-     </div>
+        <button onClick={() => {
+          setRotationsState(RotateState.STOP_ROTATING);
+        }}
+          className="rounded bg-red-500 px-4 py-2 text-white">
+          Stop Rotation
+        </button>
+      </div>
+      <div className="group rounded-lg border px-0.5 py-0.5 transition-colors mb-4 bg-gradient-to-r from-[#DB27A7] from-14% via-[#336FFF] via-14% via-[#0367ff] via-14% via-[#E78DFF] via-14% via-[#16D00D] via-14% via-[#FDC161] via-14% to-[#f9d208] to-16% p-0 mt-4">
+        <button className="btn btn-block border rounded text-white" disabled={!claimable} onClick={() => {
+          submitLootboxClaim()
+        }}>
+          {getButtonMessage()}
+        </button>
+      </div>
     </div>
   );
 }
