@@ -20,7 +20,7 @@ export const ConnectBtn = () => {
 
   const isMounted = useRef(false);
 
-  const profile = useProfile(address);
+  const { profile, avatar } = useProfile(address);
 
   useEffect(() => {
     isMounted.current = true;
@@ -58,17 +58,24 @@ export const ConnectBtn = () => {
         className="flex cursor-pointer items-center justify-center gap-x-2 rounded-full  px-4 py-2 font-mono font-bold bg-[#eef0f3]"
         onClick={async () => openAccountModal?.()}
       >
-        <div
-          role="button"
-          tabIndex={1}
-          className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full"
-          style={{
-            backgroundColor: "white",
-            boxShadow: "0px 2px 2px 0px rgba(81, 98, 255, 0.20)",
-          }}
-        >
+        {avatar ?
+          <div
+            role="button"
+            tabIndex={1}
+            className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full"
+            style={{
+              backgroundColor: "white",
+              boxShadow: "0px 2px 2px 0px rgba(81, 98, 255, 0.20)",
+            }}
+          >
+            <img src={avatar} alt="avatar" />
+          </div> :
+          <div className="avatar placeholder">
+            <div className={`bg-neutral text-neutral-content w-8 rounded-full`}>
 
-        </div>
+            </div>
+          </div>
+        }
         <div className="max-w-40 text-ellipsis overflow-hidden">
           <p className="text-ellipsis overflow-hidden">{profile ?? address}</p>
         </div>

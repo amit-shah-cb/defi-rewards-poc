@@ -21,11 +21,13 @@ import { RotateState, RotatingCircle } from "./rotating";
 import { MotionBlur } from "./motionblur";
 import { ThreeEffects } from "./effects";
 import { Balance } from "./Balance";
+import { SpinButton } from "./SpinButton";
 
 export interface LootboxProps {
   shakeEnabled?: boolean;
 }
 
+const DEFAULT_MESSAGE = "Spin the wheel daily and earn extra points with Coinbase Wallet";
 export default function Lootbox(props: LootboxProps) {
 
   const { address } = useAccount();
@@ -36,6 +38,8 @@ export default function Lootbox(props: LootboxProps) {
   const [isShaking, setIsShaking] = useState(false);
   const [rarity, setRarity] = useState(null);
   const [rotationsState, setRotationsState] = useState(RotateState.STOPPED);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState(DEFAULT_MESSAGE);
 
   useEffect(() => {
     if (claimCooldown == null) {
@@ -79,11 +83,13 @@ export default function Lootbox(props: LootboxProps) {
         if (lastClaimedTime === 0 || (currentTimeSecs - lastClaimedTime > claimCooldown)) {
           console.log("CLAIMABLE");
           setClaimable(true);
+          setMessage(DEFAULT_MESSAGE);
         } else {
           console.log("NOT CLAIMABLE:", ((lastClaimedTime + claimCooldown) - currentTimeSecs) * 1000);
           let context = setTimeout(() => {
             console.log("CALLING SET CLAIMABLE");
             setClaimable(true);
+            setMessage(DEFAULT_MESSAGE);
           }, ((lastClaimedTime + claimCooldown) - currentTimeSecs) * 1000);
 
           return () => {
@@ -114,12 +120,8 @@ export default function Lootbox(props: LootboxProps) {
       setIsShaking(false);
     }
   }, [rarity])
-  const getButtonMessage = () => {
-    if (!claimable && claimedTime != null && claimCooldown != null) {
-      return `🔒 ${new Date((claimedTime + claimCooldown) * 1000).toLocaleString()} 🔒`;
-    }
-    return "Spin the wheel";
-  }
+
+  const notClaimable = !claimable && claimedTime != null && claimCooldown != null
 
   const getClaimFee = async () => {
     const fee = await readContract(config, {
@@ -131,6 +133,7 @@ export default function Lootbox(props: LootboxProps) {
   }
 
   const submitLootboxClaim = async () => {
+    setIsSubmitting(true);
     console.log("Click");
     const { connector } = getAccount(config)
     const claimFee = await getClaimFee();
@@ -159,57 +162,67 @@ export default function Lootbox(props: LootboxProps) {
     } catch (e) {
       console.error(e);
       alert("Transaction failed");
+      setIsSubmitting(false);
       return
     }
-    const tx = await writeContract(config, {
-      abi: PointsUpgradableAbi,
-      address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
-      functionName: "claimLootBoxWithEntropy",
-      args: [randomHexValue],
-      value: claimFee,
-      connector
-    } as any);
-
-    setRarity(null);
-    setRotationsState(RotateState.START);
-    setIsShaking(true);
-    console.log("tx hash:", tx);
-
-    waitForTransactionReceipt(config, {
-      hash: tx
-    }).then(async (receipt) => {
-      console.log("receipt", receipt);
-      let unwatch = watchContractEvent(config, {
-        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+    try {
+      const tx = await writeContract(config, {
         abi: PointsUpgradableAbi,
-        eventName: 'LootBoxOpened',
-        args: {
-          claimer: address
-        },
-        fromBlock: receipt.blockNumber,
-        poll: true,
-        onError: (e) => {
-          console.error(e);
-          unwatch();
-          setRarity(null);
-          setRotationsState(RotateState.STOP_ROTATING);
-          setIsShaking(false);
-        },
-        onLogs(logs) {
-          const decodedLog = decodeEventLog({
-            abi: PointsUpgradableAbi,
-            data: logs[0].data,
-            topics: logs[0].topics,
-          });
-          console.log(decodedLog);
-          setRarity(Number((decodedLog as any).args.lootBoxRarity));
-          setRotationsState(RotateState.STOP_ROTATING);
-          unwatch();
-          console.log("unwatched");
-          setClaimable(false);
-        }
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        functionName: "claimLootBoxWithEntropy",
+        args: [randomHexValue],
+        value: claimFee,
+        connector
+      } as any);
+      setRarity(null);
+      setRotationsState(RotateState.START);
+      setIsShaking(true);
+      console.log("tx hash:", tx);
+
+      waitForTransactionReceipt(config, {
+        hash: tx
+      }).then(async (receipt) => {
+        console.log("receipt", receipt);
+        let unwatch = watchContractEvent(config, {
+          address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+          abi: PointsUpgradableAbi,
+          eventName: 'LootBoxOpened',
+          args: {
+            claimer: address
+          },
+          fromBlock: receipt.blockNumber,
+          poll: true,
+          onError: (e) => {
+            console.error(e);
+            unwatch();
+            setRarity(null);
+            setRotationsState(RotateState.STOP_ROTATING);
+            setIsShaking(false);
+            setIsSubmitting(false);
+          },
+          onLogs(logs) {
+            const decodedLog = decodeEventLog({
+              abi: PointsUpgradableAbi,
+              data: logs[0].data,
+              topics: logs[0].topics,
+            });
+            console.log(decodedLog);
+            setRarity(Number((decodedLog as any).args.lootBoxRarity));
+            setRotationsState(RotateState.STOP_ROTATING);
+            unwatch();
+            console.log("unwatched");
+            setClaimable(false);
+            setMessage("You already won $DRIP today. Come back tomorrow to spin again!")
+            setIsSubmitting(false);
+          }
+        });
       });
-    });
+    } catch (e) {
+      setIsSubmitting(false);
+    }
+
+
+
   }
 
   return (
@@ -270,6 +283,11 @@ export default function Lootbox(props: LootboxProps) {
 
         </Canvas>
       </div>
+      <div className="flex flex-col items-center justify-center gap-2 mt-2">
+        <p className="text-2xl">WIN $DRIP everday</p>
+        <p className={`${notClaimable ? "text-[#0052FF]" : ""}`}>{message}</p>
+      </div>
+
       <div style={{ position: 'absolute', bottom: '10px', left: '10px' }}>
         <button onClick={() => {
           setRarity(null);
@@ -284,13 +302,8 @@ export default function Lootbox(props: LootboxProps) {
           Stop Rotation
         </button>
       </div>
-      <div className="group rounded-lg border px-0.5 py-0.5 transition-colors mb-4 bg-gradient-to-r from-[#DB27A7] from-14% via-[#336FFF] via-14% via-[#0367ff] via-14% via-[#E78DFF] via-14% via-[#16D00D] via-14% via-[#FDC161] via-14% to-[#f9d208] to-16% p-0 mt-4">
-        <button className="btn btn-block border rounded text-white" disabled={!claimable} onClick={() => {
-          submitLootboxClaim()
-        }}>
-          {getButtonMessage()}
-        </button>
-      </div>
-    </div>
+
+      <SpinButton isSubmitting={isSubmitting} claimable={claimable} submitLootboxClaim={submitLootboxClaim} claimedTime={claimedTime} claimCooldown={claimCooldown} />
+    </div >
   );
 }

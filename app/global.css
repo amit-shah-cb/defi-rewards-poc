@@ -16,6 +16,14 @@
     padding: 0;
     overflow: hidden;
     background-color: white;
-    color:rgb(28, 28, 28);
+    color: rgb(28, 28, 28);
+    font-family: 'typewriter', sans-serif;
   }
+}
+
+@font-face {
+  font-family: 'typewriter';
+  src: url('/fonts/type_writer.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
 }

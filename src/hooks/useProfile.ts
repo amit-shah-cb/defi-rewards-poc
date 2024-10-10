@@ -8,12 +8,13 @@ export async function getProfile(address: string) {
 
 export function useProfile(address: string) {
     const [profile, setProfile] = useState<any>(null);
-
+    const [avatar, setAvatar] = useState<any>(null);
     useEffect(() => {
         getProfile(address).then(data => {
             setProfile(data.profile)
+            setAvatar(data.avatar)
         });
     }, [address]);
 
-    return profile;
+    return { profile, avatar };
 }
