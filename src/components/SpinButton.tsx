@@ -62,10 +62,10 @@ export function SpinButton({ isSubmitting, claimable, submitLootboxClaim, claime
         return "Spin the wheel";
     }
 
-    return (<div className="group rounded-lg border px-0.5 py-0.5 transition-colors mb-4 bg-gradient-to-r from-[#DB27A7] from-2% via-[#336FFF] via-14% via-[#0367ff] via-14% via-[#E78DFF] via-14% via-[#16D00D] via-14% via-[#FDC161] via-14% to-[#f9d208] to-16% p-0 mt-4">
-        <button className="btn btn-block border rounded text-white disabled:bg-black disabled:text-white" disabled={!claimable} onClick={submitLootboxClaim}>
+    return (
+        <button className="btn btn-block border border-[#3773F5] rounded text-white disabled:bg-[#3773F5] disabled:text-white bg-[#3773F5] font-typewriter" disabled={!claimable} onClick={submitLootboxClaim}>
             {isSubmitting ? <span className="loading loading-spinner"></span> : getButtonMessage()}
         </button>
-    </div>)
+    )
 
 }

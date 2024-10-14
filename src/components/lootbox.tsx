@@ -283,12 +283,12 @@ export default function Lootbox(props: LootboxProps) {
 
         </Canvas>
       </div>
-      <div className="flex flex-col items-center justify-center gap-2 mt-2">
+      <div className="flex flex-col items-center justify-center gap-2 mt-2 mb-4">
         <p className="text-2xl">WIN $DRIP everday</p>
         <p className={`${notClaimable ? "text-[#0052FF]" : ""}`}>{message}</p>
       </div>
 
-      <div style={{ position: 'absolute', bottom: '10px', left: '10px' }}>
+      {/* <div style={{ position: 'absolute', bottom: '10px', left: '10px' }}>
         <button onClick={() => {
           setRarity(null);
           setRotationsState(RotateState.START);
@@ -301,7 +301,7 @@ export default function Lootbox(props: LootboxProps) {
           className="rounded bg-red-500 px-4 py-2 text-white">
           Stop Rotation
         </button>
-      </div>
+      </div> */}
 
       <SpinButton isSubmitting={isSubmitting} claimable={claimable} submitLootboxClaim={submitLootboxClaim} claimedTime={claimedTime} claimCooldown={claimCooldown} />
     </div >
