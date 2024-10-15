@@ -16,6 +16,22 @@
     padding: 0;
     overflow: hidden;
     background-color: white;
-    color:rgb(28, 28, 28);
+    color: rgb(28, 28, 28);
+    font-family: 'coinbase-mono', sans-serif;
   }
+}
+
+@font-face {
+  font-family: 'typewriter';
+  src: url('/fonts/type_writer.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'coinbase-mono';
+  src: url('/fonts/Coinbase_Mono-Regular-web.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
