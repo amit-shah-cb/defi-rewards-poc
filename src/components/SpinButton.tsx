@@ -63,7 +63,7 @@ export function SpinButton({ isSubmitting, claimable, submitLootboxClaim, claime
     }
 
     return (
-        <button className="btn btn-block border border-[#3773F5] rounded text-white disabled:bg-[#3773F5] disabled:text-white bg-[#3773F5] font-typewriter" disabled={!claimable} onClick={submitLootboxClaim}>
+        <button className="btn btn-block border border-[#001ad9] rounded-full text-white disabled:bg-[#001ad9] disabled:text-white bg-[#001ad9] font-typewriter" disabled={!claimable} onClick={submitLootboxClaim}>
             {isSubmitting ? <span className="loading loading-spinner"></span> : getButtonMessage()}
         </button>
     )

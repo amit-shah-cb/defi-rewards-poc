@@ -21,6 +21,7 @@ export interface ArcItem{
     winString?: string;
     translation?: THREE.Vector3;
 }
+
 export interface RotatingCircleProps {
   items: ArcItem[];
   rotationState?: RotateState;
@@ -105,6 +106,8 @@ export const RotatingCircle = ({items, rotationState, rarity}:RotatingCircleProp
         handleStart();
     }else if(rotationState === RotateState.STOP_ROTATING){
         handleStop();
+    }else if(rotationState === RotateState.ERROR){
+        handleStop();
     }
   },[rotationState]);
 
@@ -125,32 +128,50 @@ export const RotatingCircle = ({items, rotationState, rarity}:RotatingCircleProp
   });
 
   useEffect(() => {
-    if (isStopping && rarity>=0) {
-        const index = rarity+1;
-      const selection = ((index-1) * wedge) + halfPointWedge;
-      console.log("selection:",selection);
-      const currentRotation = (meshRef.current as any).rotation.z;
-      console.log("currentRotation:",currentRotation);
-      const targetRotation = (Math.floor(currentRotation / (Math.PI * 2)) * Math.PI * 2)+ 2*(Math.PI *2) - (rarity*wedge) + halfPointWedge;// + selection;// Math.PI * .25;   
-      setHighlightWedge(index);            
-      setSpringProps({  
-        from: { rotation: currentRotation },
-        to: { rotation: targetRotation },              
-        config: {
-          duration: ((targetRotation-currentRotation)/rotationSpeed * 200),
-          easing: easings.easeOutElastic,
-        },
-        onRest: () => {                 
-            setIsStopping(false);
-        },
-        
-      });
-    }
+    if (isStopping){
+        if(rotationState === RotateState.ERROR){
+            const currentRotation = (meshRef.current as any).rotation.z;
+            console.log("currentRotation:",currentRotation);
+            const targetRotation = (Math.floor(currentRotation / (Math.PI * 2)) * Math.PI * 2)+ 3*(Math.PI *2);                        
+            setSpringProps({  
+                from: { rotation: currentRotation },
+                to: { rotation: targetRotation },              
+                config: {
+                duration: ((targetRotation-currentRotation)/rotationSpeed * 200),
+                easing: easings.easeOutElastic,
+                },
+                onRest: () => {                 
+                    setIsStopping(false);
+                },
+            });
+        } 
+        else if(rarity>=0 ) {
+            console.log("STOPPING AT:",rarity);
+            const index = rarity+1;
+            const selection = ((index-1) * wedge) + halfPointWedge;
+            console.log("selection:",selection);
+            const currentRotation = (meshRef.current as any).rotation.z;
+            console.log("currentRotation:",currentRotation);
+            const targetRotation = (Math.floor(currentRotation / (Math.PI * 2)) * Math.PI * 2)+ 2*(Math.PI *2) - (rarity*wedge) + halfPointWedge;// + selection;// Math.PI * .25;   
+            setHighlightWedge(index);            
+            setSpringProps({  
+                from: { rotation: currentRotation },
+                to: { rotation: targetRotation },              
+                config: {
+                duration: ((targetRotation-currentRotation)/rotationSpeed * 200),
+                easing: easings.easeOutElastic,
+                },
+                onRest: () => {                 
+                    setIsStopping(false);
+                },
+            });
+        }   
+    } 
   }, [isStopping,rarity]);
 
   useEffect(()=>{
     if(!isRotating && !rarity){
-        // handleStart();
+       
     }
   },[isRotating,rarity]);
 
@@ -235,8 +256,8 @@ export const RotatingCircle = ({items, rotationState, rarity}:RotatingCircleProp
                 >
                     {(index+1)*100}pts
                 </Text> */}
-                 <mesh key={item.text+index+"text"} position={ [radius/4,radius/5,.1]} rotation-z={Math.PI*.25 }>              
-                      <textGeometry args={[item.text, {font:typeWriterFont, size:0.08, height: .0, depth:0., bevelEnabled:false }]}/>
+                 <mesh key={item.text+index+"text"} position={ [radius/4.5,radius/5.5,.1]} rotation-z={Math.PI*.25 }>              
+                      <textGeometry args={[item.text, {font:typeWriterFont, size:0.07, height: .0, depth:0., bevelEnabled:false }]}/>
                       <meshBasicMaterial attach='material' color={item.textColor}/>
                   </mesh>
             </group>

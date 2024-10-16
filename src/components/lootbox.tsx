@@ -40,6 +40,7 @@ export default function Lootbox(props: LootboxProps) {
   const [rotationsState, setRotationsState] = useState(RotateState.STOPPED);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
+  const [items, setItems] = useState([])
 
   useEffect(() => {
     if (claimCooldown == null) {
@@ -55,6 +56,25 @@ export default function Lootbox(props: LootboxProps) {
   }, [])
 
   useEffect(() => {
+    if(items.length === 0) {
+     readContract(config, {
+        abi: PointsUpgradableAbi,
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        functionName: "getLootBoxRarity",       
+      }).then((data) => {
+        console.log("getLastClaimed:", data);
+        setItems(data.map((item) => {
+          return {
+            text: `${item} DRIP`,
+            textColor:"white",
+            color: "blue",
+          }
+        }))
+      })
+    }
+  },[]);
+
+  useEffect(() => {
     if (address != null) {
       readContract(config, {
         abi: PointsUpgradableAbi,
@@ -64,7 +84,7 @@ export default function Lootbox(props: LootboxProps) {
       }).then((data) => {
         console.log("user points:", data);
         setPoints(data);
-      });
+      });     
     }
   }, [address, claimable])
 
@@ -161,8 +181,9 @@ export default function Lootbox(props: LootboxProps) {
       })
     } catch (e) {
       console.error(e);
-      alert("Transaction failed");
       setIsSubmitting(false);
+      setClaimable(true)
+      setMessage("Tx simulation failed. Try again.")
       return
     }
     try {
@@ -196,9 +217,11 @@ export default function Lootbox(props: LootboxProps) {
             console.error(e);
             unwatch();
             setRarity(null);
-            setRotationsState(RotateState.STOP_ROTATING);
+            setRotationsState(RotateState.ERROR);
             setIsShaking(false);
             setIsSubmitting(false);
+            setClaimable(true)
+            setMessage("There was an error spinning the wheel onchain. Please try again.")
           },
           onLogs(logs) {
             const decodedLog = decodeEventLog({
@@ -212,7 +235,7 @@ export default function Lootbox(props: LootboxProps) {
             unwatch();
             console.log("unwatched");
             setClaimable(false);
-            setMessage("You already won $DRIP today. Come back tomorrow to spin again!")
+-           setMessage("Congratulations you won $DRIP! \r\nComeback and spin the wheel again in:")
             setIsSubmitting(false);
           }
         });
@@ -235,7 +258,7 @@ export default function Lootbox(props: LootboxProps) {
           <OrbitControls />
           <OrthographicCamera
             makeDefault
-            zoom={140}
+            zoom={150}
             // top={20}
             // bottom={-20}
             // left={-40}
@@ -249,23 +272,7 @@ export default function Lootbox(props: LootboxProps) {
             <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6} />
           }
           {/* <Circle /> */}
-          <RotatingCircle items={[{
-            text: "100pts",
-            textColor: "white",
-            color: "blue"
-          }, {
-            text: "200pts",
-            textColor: "white",
-            color: "blue"
-          }, {
-            text: "500pts",
-            textColor: "white",
-            color: "blue"
-          }, {
-            text: "1000pts",
-            textColor: "white",
-            color: "blue"
-          }]} rotationState={rotationsState} rarity={rarity} />
+          <RotatingCircle items={items} rotationState={rotationsState} rarity={rarity} />
           {/* <Box /> */}
           <ThreeEffects motionBlurEnabled={false} />
           {false && <EffectComposer>
@@ -283,7 +290,7 @@ export default function Lootbox(props: LootboxProps) {
 
         </Canvas>
       </div>
-      <div className="flex flex-col items-center justify-center gap-2 mt-2 mb-4">
+      <div className="h-[80px] flex-col items-center justify-center gap-2 mt-2 mb-4">
         <p className="text-2xl">WIN $DRIP everday</p>
         <p className={`${notClaimable ? "text-[#0052FF]" : ""}`}>{message}</p>
       </div>
