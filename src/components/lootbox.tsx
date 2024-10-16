@@ -41,6 +41,7 @@ export default function Lootbox(props: LootboxProps) {
   const [rotationsState, setRotationsState] = useState(RotateState.STOPPED);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
+  const [items, setItems] = useState([])
 
   useEffect(() => {
     if (claimCooldown == null) {
@@ -56,6 +57,25 @@ export default function Lootbox(props: LootboxProps) {
   }, [])
 
   useEffect(() => {
+    if(items.length === 0) {
+     readContract(config, {
+        abi: PointsUpgradableAbi,
+        address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+        functionName: "getLootBoxRarity",       
+      }).then((data) => {
+        console.log("getLastClaimed:", data);
+        setItems(data.map((item) => {
+          return {
+            text: `${item} DRIP`,
+            textColor:"white",
+            color: "blue",
+          }
+        }))
+      })
+    }
+  },[]);
+
+  useEffect(() => {
     if (address != null) {
       readContract(config, {
         abi: PointsUpgradableAbi,
@@ -65,7 +85,7 @@ export default function Lootbox(props: LootboxProps) {
       }).then((data) => {
         console.log("user points:", data);
         setPoints(data);
-      });
+      });     
     }
   }, [address, claimable])
 
@@ -134,7 +154,7 @@ export default function Lootbox(props: LootboxProps) {
   }
 
   const submitLootboxClaim = async () => {
-    setIsSubmitting(true);
+    setIsSubmitting(true);   
     console.log("Click");
     const { connector } = getAccount(config)
     const claimFee = await getClaimFee();
@@ -142,7 +162,9 @@ export default function Lootbox(props: LootboxProps) {
       address
     });
     if (balance.value < claimFee) {
-      alert("Insufficient balance");
+      console.log("Insufficient balance:", balance, "claimFee:", claimFee);      
+      setMessage("Insufficient balance. Please load $0.50 in ETH on BASE to your wallet.");     
+      setIsSubmitting(false);
       return;
     }
     console.log("claimFee", claimFee);
@@ -162,8 +184,9 @@ export default function Lootbox(props: LootboxProps) {
       })
     } catch (e) {
       console.error(e);
-      alert("Transaction failed");
       setIsSubmitting(false);
+      setClaimable(true)
+      setMessage("Tx simulation failed. Try again.")
       return
     }
     try {
@@ -210,9 +233,11 @@ export default function Lootbox(props: LootboxProps) {
           } catch (e) {
             if (intervalId) clearInterval(intervalId);
             setRarity(null);
-            setRotationsState(RotateState.STOP_ROTATING);
+            setRotationsState(RotateState.ERROR);
             setIsShaking(false);
             setIsSubmitting(false);
+            setClaimable(true)
+            setMessage("There was an error spinning the wheel onchain. Please try again.")
           }
         }
         intervalId = setInterval(fetchLogs, 500);
@@ -240,10 +265,10 @@ export default function Lootbox(props: LootboxProps) {
       <div className="h-96 w-full rounded" >
         <Canvas gl={{ alpha: true, antialias: true }} className="rounded-lg">
           <color attach='background' args={["white"]} />
-          <OrbitControls />
+          {/* <OrbitControls /> */}
           <OrthographicCamera
             makeDefault
-            zoom={140}
+            zoom={150}
             // top={20}
             // bottom={-20}
             // left={-40}
@@ -257,23 +282,7 @@ export default function Lootbox(props: LootboxProps) {
             <CameraShake maxYaw={0.01} maxPitch={0.5} maxRoll={0.5} yawFrequency={0.5} pitchFrequency={2.5} rollFrequency={2.4} intensity={.6} />
           }
           {/* <Circle /> */}
-          <RotatingCircle items={[{
-            text: "100pts",
-            textColor: "white",
-            color: "blue"
-          }, {
-            text: "200pts",
-            textColor: "white",
-            color: "blue"
-          }, {
-            text: "500pts",
-            textColor: "white",
-            color: "blue"
-          }, {
-            text: "1000pts",
-            textColor: "white",
-            color: "blue"
-          }]} rotationState={rotationsState} rarity={rarity} />
+          <RotatingCircle items={items} rotationState={rotationsState} rarity={rarity} />
           {/* <Box /> */}
           <ThreeEffects motionBlurEnabled={false} />
           {false && <EffectComposer>
@@ -291,8 +300,8 @@ export default function Lootbox(props: LootboxProps) {
 
         </Canvas>
       </div>
-      <div className="mb-4 mt-2 flex flex-col items-center justify-center gap-2">
-        <p className="text-2xl">WIN $DRIP everday</p>
+      <div className="mb-4 mt-2 h-[70px] flex-col items-center justify-center gap-2">
+        <p className="text-lg font-semibold opacity-80">WIN $DRIP EVERYDAY</p>
         <p className={`${notClaimable ? "text-[#0052FF]" : ""}`}>{message}</p>
       </div>
 
