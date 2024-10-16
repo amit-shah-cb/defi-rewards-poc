@@ -161,8 +161,8 @@ export default function Lootbox(props: LootboxProps) {
       address
     });
     if (balance.value < claimFee) {
-      console.log("Insufficient balance");
-      setMessage("Insufficient balance. Please load more ETH to your wallet.");     
+      console.log("Insufficient balance:", balance, "claimFee:", claimFee);      
+      setMessage("Insufficient balance. Please load $0.50 in ETH on BASE to your wallet.");     
       setIsSubmitting(false);
       return;
     }
