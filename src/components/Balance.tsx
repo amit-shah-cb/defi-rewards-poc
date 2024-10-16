@@ -7,12 +7,12 @@ export function Balance({ points }) {
     }
     return (
         <div className="mb-4" >
-            <h2 className={`mb-3 text-xl opacity-50`}>MY REWARDS</h2>
+            <h2 className={`mb-3 text-lg font-semibold`}>MY REWARDS</h2>
             <div className="flex justify-center items-center gap-2">
                 <div className="m-0 max-w-[30ch] flex items-center gap-2 justify-center">
                     <div>
                         <p>
-                             <span className="text-6xl">{balance}</span>
+                             <span className="text-5xl">{balance}</span>
                         </p>
                     </div>
                 </div> 

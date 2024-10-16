@@ -290,8 +290,8 @@ export default function Lootbox(props: LootboxProps) {
 
         </Canvas>
       </div>
-      <div className="h-[80px] flex-col items-center justify-center gap-2 mt-2 mb-4">
-        <p className="text-2xl">WIN $DRIP everday</p>
+      <div className="h-[70px] flex-col items-center justify-center gap-2 mt-2 mb-4">
+        <p className="text-lg opacity-80 font-semibold">WIN $DRIP EVERYDAY</p>
         <p className={`${notClaimable ? "text-[#0052FF]" : ""}`}>{message}</p>
       </div>
 
