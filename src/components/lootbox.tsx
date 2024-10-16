@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount, useBalance, useEnsName, useWatchContractEvent } from "wagmi";
-import { bytesToBigInt, decodeEventLog, formatBlock, formatUnits } from "viem";
+import { AbiEvent, bytesToBigInt, decodeEventLog, formatBlock, formatUnits, parseAbiItem } from "viem";
 import { useEffect, useRef, useState } from "react";
 
 import * as THREE from 'three'
@@ -15,13 +15,14 @@ import { Bloom, EffectComposer, ChromaticAberration, Outline } from '@react-thre
 import { BlendFunction } from 'postprocessing'
 import { OrbitControls, OrthographicCamera, View as ViewImpl, CameraShake } from '@react-three/drei'
 import { config } from "@/components/provider";
-import { readContract, writeContract, simulateContract, getBalance, getAccount, waitForTransactionReceipt, watchContractEvent } from '@wagmi/core';
+import { readContract, writeContract, simulateContract, getBalance, getAccount, waitForTransactionReceipt, watchContractEvent, getPublicClient } from '@wagmi/core';
 import { PointsUpgradableAbi } from "@/abis/PointsUpgradable";
 import { RotateState, RotatingCircle } from "./rotating";
 import { MotionBlur } from "./motionblur";
 import { ThreeEffects } from "./effects";
 import { Balance } from "./Balance";
 import { SpinButton } from "./SpinButton";
+import { getLogs } from "viem/actions";
 
 export interface LootboxProps {
   shakeEnabled?: boolean;
@@ -177,45 +178,52 @@ export default function Lootbox(props: LootboxProps) {
       setRarity(null);
       setRotationsState(RotateState.START);
       setIsShaking(true);
-      console.log("tx hash:", tx);
 
       waitForTransactionReceipt(config, {
         hash: tx
       }).then(async (receipt) => {
-        console.log("receipt", receipt);
-        let unwatch = watchContractEvent(config, {
-          address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
-          abi: PointsUpgradableAbi,
-          eventName: 'LootBoxOpened',
-          args: {
-            claimer: address
-          },
-          fromBlock: receipt.blockNumber,
-          poll: true,
-          onError: (e) => {
-            console.error(e);
-            unwatch();
+        const client = getPublicClient(config);
+        let intervalId: NodeJS.Timeout | null = null;
+        const fetchLogs = async () => {
+          try {
+            const logs = await client.getLogs({
+              address: process.env.NEXT_PUBLIC_POINTS_ADDRESS as `0x${string}`,
+              event: parseAbiItem('event LootBoxOpened(address indexed claimer, uint256 lootBoxRarity)'),
+              fromBlock: receipt.blockNumber,
+              toBlock: 'latest'
+            })
+
+            if (logs.length > 0) {
+              if (intervalId) clearInterval(intervalId);
+              const decodedLog = decodeEventLog({
+                abi: PointsUpgradableAbi,
+                data: logs[0].data,
+                topics: logs[0].topics,
+              })
+
+              setRarity(Number((decodedLog as any).args.lootBoxRarity))
+              setRotationsState(RotateState.STOP_ROTATING)
+              setClaimable(false)
+              setMessage("You already won $DRIP today. Come back tomorrow to spin again!")
+              setIsSubmitting(false)
+            }
+          } catch (e) {
+            if (intervalId) clearInterval(intervalId);
             setRarity(null);
             setRotationsState(RotateState.STOP_ROTATING);
             setIsShaking(false);
             setIsSubmitting(false);
-          },
-          onLogs(logs) {
-            const decodedLog = decodeEventLog({
-              abi: PointsUpgradableAbi,
-              data: logs[0].data,
-              topics: logs[0].topics,
-            });
-            console.log(decodedLog);
-            setRarity(Number((decodedLog as any).args.lootBoxRarity));
-            setRotationsState(RotateState.STOP_ROTATING);
-            unwatch();
-            console.log("unwatched");
-            setClaimable(false);
-            setMessage("You already won $DRIP today. Come back tomorrow to spin again!")
-            setIsSubmitting(false);
           }
-        });
+        }
+        intervalId = setInterval(fetchLogs, 500);
+        // Timeout to stop polling for logs after 1 minute
+        setTimeout(() => {
+          if (intervalId) clearInterval(intervalId);
+          setRarity(null);
+          setRotationsState(RotateState.STOP_ROTATING);
+          setIsShaking(false);
+          setIsSubmitting(false);
+        }, 60000);
       });
     } catch (e) {
       setIsSubmitting(false);
@@ -283,7 +291,7 @@ export default function Lootbox(props: LootboxProps) {
 
         </Canvas>
       </div>
-      <div className="flex flex-col items-center justify-center gap-2 mt-2 mb-4">
+      <div className="mb-4 mt-2 flex flex-col items-center justify-center gap-2">
         <p className="text-2xl">WIN $DRIP everday</p>
         <p className={`${notClaimable ? "text-[#0052FF]" : ""}`}>{message}</p>
       </div>
