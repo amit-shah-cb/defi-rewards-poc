@@ -255,7 +255,7 @@ export default function Lootbox(props: LootboxProps) {
       <div className="h-96 w-full rounded" >
         <Canvas gl={{ alpha: true, antialias: true }} className="rounded-lg">
           <color attach='background' args={["white"]} />
-          <OrbitControls />
+          {/* <OrbitControls /> */}
           <OrthographicCamera
             makeDefault
             zoom={150}
