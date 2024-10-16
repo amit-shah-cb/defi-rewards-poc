@@ -153,7 +153,7 @@ export default function Lootbox(props: LootboxProps) {
   }
 
   const submitLootboxClaim = async () => {
-    setIsSubmitting(true);
+    setIsSubmitting(true);   
     console.log("Click");
     const { connector } = getAccount(config)
     const claimFee = await getClaimFee();
@@ -161,7 +161,9 @@ export default function Lootbox(props: LootboxProps) {
       address
     });
     if (balance.value < claimFee) {
-      alert("Insufficient balance");
+      console.log("Insufficient balance");
+      setMessage("Insufficient balance. Please load more ETH to your wallet.");     
+      setIsSubmitting(false);
       return;
     }
     console.log("claimFee", claimFee);
