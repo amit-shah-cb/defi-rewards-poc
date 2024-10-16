@@ -227,7 +227,7 @@ export default function Lootbox(props: LootboxProps) {
               setRarity(Number((decodedLog as any).args.lootBoxRarity))
               setRotationsState(RotateState.STOP_ROTATING)
               setClaimable(false)
-              setMessage("You already won $DRIP today. Come back tomorrow to spin again!")
+              setMessage("Congratulations you won $DRIP! \r\nComeback and spin the wheel again in:")
               setIsSubmitting(false)
             }
           } catch (e) {
